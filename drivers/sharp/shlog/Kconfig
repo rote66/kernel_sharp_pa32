@@ -1,0 +1,91 @@
+# drivers/sharp/shlog/Kconfig
+
+menu "SHLOG_SYSTEM"
+
+comment "SHLOG_SYSTEM"
+
+config SHLOG_SYSTEM
+bool "SHLOG_SYSTEM driver"
+default y
+
+config SHLOG_SYSTEM_LOGCAT
+bool "enable SHLOG_SYSTEM logcat"
+depends on SHLOG_SYSTEM
+default n
+
+endmenu
+
+menu "SHLOG_SHLOG"
+
+comment "SHLOG_SHLOG"
+
+config SHLOG_SHLOG
+bool "SHARP SHLOG driver"
+default y
+
+config SHLOG_SHLOG_MODEM
+bool "enable SHARP SHLOG for modem."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_SHLOG_LOGBUF
+bool "enable SHARP SHLOG for logbuf."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_SHLOG_RAMOOPS
+bool "enable SHARP SHLOG for ramoops."
+depends on SHLOG_SHLOG
+default n
+
+config SHLOG_SHLOG_TASKLIST
+bool "enable SHARP SHLOG for tasks."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_SHLOG_LATESTSTACK
+bool "enable SHARP SHLOG for tasks of latest process."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_SHLOG_LOGD
+bool "enable SHARP SHLOG for logd."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_SHLOG_LOGGER
+bool "enable SHARP SHLOG for logger."
+depends on SHLOG_SHLOG
+default n
+
+config SHLOG_HANDLE_PANIC
+bool "enable SHARP handler for panic."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_HANDLE_SURFACE_FLINGER
+bool "enable SHARP handler for reset of surfaceflinger."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_HANDLE_APPLOG
+bool "enable SHARP handler for crash of userspace."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_PANIC_ON_PWRKEY
+bool "enable SHARP handler to call panic when powerkey pressed."
+depends on SHLOG_SHLOG
+default y
+
+config SHLOG_PANIC_ON_PWRKEY_TIMEOUT
+int "Timeout to call panic when power-key is pressed."
+depends on SHLOG_SHLOG
+default 4
+
+config SHLOG_PANIC_ON_SUBSYS
+bool "enable SHARP handler to call panic when subsystem crashed."
+depends on SHLOG_SHLOG
+default n
+
+endmenu

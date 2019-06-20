@@ -1,0 +1,59 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+qcom,sharp-dl90 {
+	qcom,max-voltage-uv = <4320000>;
+	qcom,nom-batt-capacity-mah = <3000>;
+	qcom,batt-id-kohm = <0>;
+	qcom,battery-beta = <3380>;
+	qcom,battery-type = "sharp";
+	qcom,chg-rslow-comp-c1 = <2754620>;
+	qcom,chg-rslow-comp-c2 = <3598554>;
+	qcom,chg-rs-to-rslow = <1188109>;
+	qcom,chg-rslow-comp-thr = <0x9D>;
+	qcom,checksum = <0xD303>;
+	qcom,gui-version = "PMI8994GUI - 2.1.6.9";
+	qcom,fg-profile-data = [
+		 DC 83 57 7C 
+		 5E 80 DF 75 
+		 42 83 C6 61 
+		 3A 80 B0 87 
+		 22 82 E3 98 
+		 9F B6 1E C2 
+		 58 0F AC 82 
+		 D7 79 F8 7C 
+		 16 72 23 83 
+		 0E 7A F8 86 
+		 6B 82 5F 82 
+		 A3 92 16 AF 
+		 94 B8 82 11 
+		 C6 0B DC 59 
+		 0A 6E 71 FD 
+		 88 22 F4 46 
+		 E2 42 00 00 
+		 AE 47 37 40 
+		 00 00 00 00 
+		 00 00 00 00 
+		 00 00 00 00 
+		 E1 71 D2 70 
+		 BC 75 2B 80 
+		 7B 7C 7A 70 
+		 93 74 AC 7A 
+		 34 7C 09 70 
+		 1D 75 43 A9 
+		 1D 1A 5B 46 
+		 54 A0 71 0C 
+		 28 00 FF 36 
+		 F0 11 30 03 
+		 00 00 00 0C 
+	];
+};

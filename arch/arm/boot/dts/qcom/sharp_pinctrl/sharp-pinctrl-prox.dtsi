@@ -1,0 +1,47 @@
+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&soc {
+	tlmm: pinctrl@01010000 {
+		compatible = "qcom,msm8996-pinctrl";
+		reg = <0x01010000 0x300000>;
+		interrupts = <0 208 0>;
+
+		/*****************************************/
+		/*  pinctrl customize setting            */
+		/*  ProximitySensor                      */
+		/*****************************************/
+		prox_int_active: prox_int_active {
+			mux {
+				pins = "gpio120";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio120";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+		
+		prox_int_suspend: prox_int_suspend {
+			mux {
+				pins = "gpio120";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio120";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+	};
+};

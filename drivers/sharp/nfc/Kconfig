@@ -1,0 +1,46 @@
+#
+# TOSHIBA NFC Chip driver Support
+#
+
+menu "Toshiba NFC Chip Driver Support"
+
+config TOSHIBA_NFC
+    bool
+    default n
+
+config TOSHIBA_NFC_GPIO
+    bool "TOSHIBA_NFC GPIO Driver"
+    select TOSHIBA_NFC
+    default n
+    ---help---
+      Enable the TOSHIBA_NFC GPIO driver for NFC
+
+config TOSHIBA_NFC_I2C
+    bool "TOSHIBA_NFC I2C Driver"
+    select TOSHIBA_NFC
+    default n
+    depends on I2C
+    ---help---
+      Enable the TOSHIBA_NFC I2C driver for NFC
+
+config NFC_HVDD_REGULATOR
+    bool
+
+config NFC_HVDD_GPIO
+    bool
+
+choice
+    prompt "select platform"
+    default TOSHIBA_PLATFORM_FS
+
+config TOSHIBA_PLATFORM_FS
+    bool "PLATFORM FS"
+    select NFC_HVDD_REGULATOR
+
+config TOSHIBA_PLATFORM_MID
+    bool "PLATFORM MID"
+    select NFC_HVDD_GPIO
+
+endchoice
+
+endmenu

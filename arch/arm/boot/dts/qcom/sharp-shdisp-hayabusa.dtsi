@@ -1,0 +1,30 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&soc {
+	/*---------------------*/
+	/* hayabusa irq        */
+	/*---------------------*/
+	sharp,shdisp_panel_hayabusa {
+		compatible = "sharp,shdisp_hayabusa";
+		status = "disable";
+		hayabusa_vddio-supply = <&pm8994_lvs1>;
+		interrupts = <34 0>;
+		interrupt-parent = <&tlmm>;
+		hayabusa_rst_gpio = <&tlmm 8 0>;
+		hayabusa_vdd_gpio = <&tlmm 96 0>;
+		hayabusa_mipi_err_gpio = <&tlmm 34 0>;
+		clocks = <&clock_gcc clk_bb_clk2>;
+		clock-names = "bbclk2";
+	};
+};
+

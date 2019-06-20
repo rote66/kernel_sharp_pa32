@@ -1,0 +1,95 @@
+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&soc {
+	tlmm: pinctrl@01010000 {
+		compatible = "qcom,msm8996-pinctrl";
+		reg = <0x01010000 0x300000>;
+		interrupts = <0 208 0>;
+		gpio-controller;
+		interrupt-controller;
+
+		/*****************************************/
+		/*  pinctrl customize setting            */
+		/*  NFC/FeliCa                           */
+		/*****************************************/
+		nfc_nint_active: nfc_nint_active {
+			mux {
+				pins = "gpio9";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio9";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+		nfc_nint_suspend: nfc_nint_suspend {
+			mux {
+				pins = "gpio9";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio9";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+
+		nfc_pon_active: nfc_pon_active {
+			mux {
+				pins = "gpio62";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio62";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+		nfc_pon_suspend: nfc_pon_suspend {
+			mux {
+				pins = "gpio62";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio62";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+
+		nfc_status_active: nfc_status_active {
+			mux {
+				pins = "gpio63";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio63";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+		nfc_status_suspend: nfc_status_suspend {
+			mux {
+				pins = "gpio63";
+				function = "gpio";
+			};
+			config {
+				pins = "gpio63";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+	};
+
+};

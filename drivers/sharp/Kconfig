@@ -1,0 +1,33 @@
+#
+# SHARP configuration
+#
+
+menu "SHARP Device Drivers"
+
+source "drivers/sharp/vold/Kconfig"
+
+# SH_BOOT_CUST start
+source "drivers/sharp/shboot/Kconfig"
+# SH_BOOT_CUST end
+source "drivers/sharp/shterm/Kconfig"
+source "drivers/sharp/shbatt/Kconfig"
+source "drivers/sharp/shdiag/Kconfig"
+source "drivers/sharp/shdisp/Kconfig"
+source "drivers/sharp/shtimer/Kconfig"
+source "drivers/sharp/proximity/Kconfig"
+# NFC/FeliCa driver
+source "drivers/sharp/nfc/Kconfig"
+#/* SH_AUDIO_DRIVER -> */ /* 21-002 */
+source "drivers/sharp/shaudio/Kconfig"
+#/* SH_AUDIO_DRIVER <- */ /* 21-002 */
+
+source "drivers/sharp/shlog/Kconfig"
+source "drivers/sharp/shtps/Kconfig"
+source "drivers/sharp/shflip/Kconfig"
+source "drivers/sharp/shgrip/Kconfig"
+source "drivers/sharp/shsensor_hub/ml630q790/Kconfig"
+
+source "drivers/sharp/tunerdrv_tmm/Kconfig"
+source "drivers/sharp/shfpsensor/Kconfig"
+
+endmenu

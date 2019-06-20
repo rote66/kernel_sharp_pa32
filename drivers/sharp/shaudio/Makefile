@@ -1,0 +1,11 @@
+# CONFIG_SH_AUDIO_DRIVER newly created
+
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+    EXTRA_CFLAGS += -DSHSMARTAMP_ENG
+endif
+
+ifeq ($(USES_SHLOCAL_FBUILD),yes)
+    EXTRA_CFLAGS += -DSHSMARTAMP_FBUILD
+endif
+
+obj-$(CONFIG_SH_AUDIO_SMARTAMP) += shsmartamp_ssm4329.o

@@ -1,0 +1,25 @@
+#
+# Sensor  drivers configuration
+#
+menuconfig SENSORS_FINGERPRINT
+	bool "Finger Print Sensor devices"
+	help
+	  Say Y here, and a list of sensors drivers will be displayed.
+	  Everything that didn't fit into the other categories is here. This option
+	  doesn't affect the kernel.
+
+	  If unsure, say Y.
+
+if SENSORS_FINGERPRINT
+config SENSORS_FPRINT_FPC_PLATFORM
+	tristate "FPC fingerprint sensor platform support"
+	default y
+	help
+	  If you say yes here you get support for the platform of the fingerprint sensor.
+
+config SENSORS_FPRINT_SH_CUST
+	tristate "FPC fingerprint sensor SH customize"
+	default y
+	help
+	  If you say yes here you get support for SH customize of the fingerprint sensor.
+endif

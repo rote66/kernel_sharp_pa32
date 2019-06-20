@@ -1,0 +1,9 @@
+# drivers/sharp/shflip/Kconfig
+
+menu "SHARP FLIP Device Drivers"
+
+config SH_FLIP_SWITCH
+	bool "SHARP FLIP Device Drivers"
+	default n
+
+endmenu

@@ -1,0 +1,12 @@
+#
+# LCDC Configuration
+#
+
+menu "SHDISP Configuration"
+
+config USES_SHDISP
+	bool "There is USES_SHDISP"
+	default n
+
+
+endmenu
