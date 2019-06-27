@@ -115,7 +115,7 @@
 	};
 	static const int SHTPS_MULTI_FW_INFO_SIZE = sizeof(SHTPS_MULTI_FW_INFO_TBL) / sizeof(shtps_multi_fw_info_t);
 #else
-	#include "prj-000624-2/shtps_fw_prj-000624-2.h"
+	#include "shtps_fw_prj-000624-2.h"
 #endif /* SHTPS_MULTI_FW_ENABLE */
 
 
