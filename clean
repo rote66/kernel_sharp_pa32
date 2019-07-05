@@ -1,5 +1,8 @@
 #!/bin/sh
 make clean
 make mrproper
+rm arch/arm/boot/dts/*/*.dtb
 rm arch/arm64/boot/Image.gz-dtb
+rm -rf repack_zip/system
+rm repack_zip/emp/zImage
 echo "done"

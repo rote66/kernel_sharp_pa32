@@ -3259,10 +3259,10 @@ static int hdd_ipa_register_interface(struct hdd_ipa_priv *hdd_ipa,
 		rx_prop[IPA_IP_v6].hdr_l2_type = IPA_HDR_L2_ETHERNET_II;
 #endif
 
-		rx_prop[IPA_IP_v6].attrib.attrib_mask = IPA_FLT_META_DATA;
-		rx_prop[IPA_IP_v6].attrib.meta_data =
+		rx_prop[IPA_IP_v4].attrib.attrib_mask = IPA_FLT_META_DATA;
+		rx_prop[IPA_IP_v4].attrib.meta_data =
 			htonl(iface_context->adapter->sessionId<< 16);
-		rx_prop[IPA_IP_v6].attrib.meta_data_mask = htonl(0x00FF0000);
+		rx_prop[IPA_IP_v4].attrib.meta_data_mask = htonl(0x00FF0000);
 
 		rx_intf.num_props++;
 	}
@@ -3723,6 +3723,9 @@ int hdd_ipa_wlan_evt(hdd_adapter_t *adapter, uint8_t sta_id,
 	if (type >= IPA_WLAN_EVENT_MAX)
 		return -EINVAL;
 
+	if (WARN_ON(is_zero_ether_addr(mac_addr)))
+		return -EINVAL;
+
 	if (!hdd_ipa || !hdd_ipa_is_enabled(hdd_ipa->hdd_ctx)) {
 		HDD_IPA_LOG(VOS_TRACE_LEVEL_ERROR, "IPA OFFLOAD NOT ENABLED");
 		return -EINVAL;
@@ -3736,9 +3739,6 @@ int hdd_ipa_wlan_evt(hdd_adapter_t *adapter, uint8_t sta_id,
 		(WLAN_HDD_SOFTAP != adapter->device_mode)) {
 		return 0;
 	}
-
-	if (WARN_ON(is_zero_ether_addr(mac_addr)))
-		return -EINVAL;
 
 	/* During IPA UC resource loading/unloading
 	 * new event issued.
