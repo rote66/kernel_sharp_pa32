@@ -89,13 +89,8 @@ if BLOCK
 menu "DOS/FAT/NT Filesystems"
 
 source "fs/fat/Kconfig"
+source "fs/exfat/Kconfig"
 source "fs/ntfs/Kconfig"
-
-config EXFAT_FS
-  tristate "exFAT fs support"
-  default m
-  help
-    This option provides support for the exFAT file system.
 
 endmenu
 endif # BLOCK
