@@ -1228,7 +1228,6 @@ void *msm_vidc_open(int core_id, int session_type)
 
 	inst->debugfs_root =
 		msm_vidc_debugfs_init_inst(inst, core->debugfs_root);
-
 	return inst;
 fail_init:
 	v4l2_fh_del(&inst->event_handler);

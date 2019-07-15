@@ -28,5 +28,5 @@ mv kernel.zip ../
 cd ../magisk_module
 zip -r PA32_EMP_Kernel_modules_magisk.zip *
 mv PA32_EMP_Kernel_modules_magisk.zip ../
-cd..
+cd ..
 
