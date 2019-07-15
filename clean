@@ -4,5 +4,6 @@ make mrproper
 rm arch/arm/boot/dts/*/*.dtb
 rm arch/arm64/boot/Image.gz-dtb
 rm -rf magisk_module/system
-rm repack_zip/emp/zImage
+rm -f repack_zip/emp/zImage
+rm -f repack_zip/emp/*.dtb
 echo "done"

@@ -4,6 +4,7 @@ VER=$1
 SUB=$2
 
 rm -f repack_zip/emp/zImage
+rm -f repack_zip/emp/*.dtb
 rm -f magisk_module/system/lib/modules/*.ko
 
 if [ ! -d magisk_module/system ]; then
@@ -14,6 +15,10 @@ if [ ! -d magisk_module/system ]; then
 fi
 
 mv arch/arm64/boot/Image.gz-dtb repack_zip/emp/zImage
+mv arch/arm/boot/dts/qcom/msm8996-sharp-pa32-v3-pmi8996-fluid.dtb repack_zip/emp/dtbdump_1.dtb
+mv arch/arm/boot/dts/qcom/msm8996-sharp-pa32-v2-fluid.dtb repack_zip/emp/dtbdump_2.dtb
+mv arch/arm/boot/dts/qcom/msm8996-sharp-pa32-v3-fluid.dtb repack_zip/emp/dtbdump_3.dtb
+mv arch/arm/boot/dts/qcom/msm8996-sharp-pa32-v2-pmi8996-fluid.dtb repack_zip/emp/dtbdump_4.dtb
 cat repack_zip/emp/dtbdump_1.dtb >> repack_zip/emp/zImage
 cat repack_zip/emp/dtbdump_2.dtb >> repack_zip/emp/zImage
 cat repack_zip/emp/dtbdump_3.dtb >> repack_zip/emp/zImage
@@ -29,4 +34,10 @@ cd ../magisk_module
 zip -r PA32_EMP_Kernel_modules_magisk.zip *
 mv PA32_EMP_Kernel_modules_magisk.zip ../
 cd ..
-
+echo "--------------------------------------------------"
+echo "-              Repack      Completed             -"
+echo "--------------------------------------------------"
+echo "-              kernel  by rote66                 -"
+echo "--------------------------------------------------"
+echo "-Cuttting Edge Aftermarket Sharp Phone Technology-"
+echo "--------------------------------------------------"
