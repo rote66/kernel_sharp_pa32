@@ -35,6 +35,16 @@ config IOSCHED_DEADLINE
 config IOSCHED_MAPLE
 	tristate "Maple I/O scheduler"
 	default y
+config IOSCHED_ROW
+	tristate "ROW I/O scheduler"
+	default y
+	---help---
+	  The ROW I/O scheduler gives priority to READ requests over the
+	  WRITE requests when dispatching, without starving WRITE requests.
+	  Requests are kept in priority queues. Dispatching is done in a RR
+	  manner when the dispatch quantum for each queue is calculated
+	  according to queue priority.
+	  Most suitable for mobile devices.
 
 config IOSCHED_CFQ
 	tristate "CFQ I/O scheduler"
@@ -72,6 +82,22 @@ config IOSCHED_SIO
 	  basic merging, trying to keep a minimum overhead. It is aimed
 	  mainly for aleatory access devices (eg: flash devices).
 
+config IOSCHED_TRIPNDROID
+	tristate "Tripndroid"
+	default y
+	---help---
+	  The Trip N Droid scheduler
+
+config IOSCHED_SIOPLUS
+	tristate "Simple I/O scheduler plus"
+	default y
+	---help---
+	  The Simple I/O scheduler is an extremely simple scheduler,
+	  based on noop and deadline, that relies on deadlines to
+	  ensure fairness. The algorithm does not do any sorting but
+	  basic merging, trying to keep a minimum overhead. It is aimed
+	  mainly for aleatory access devices (eg: flash devices).
+
 config IOSCHED_BFQ
 	tristate "BFQ I/O scheduler"
 	default n
@@ -90,6 +116,17 @@ config BFQ_GROUP_IOSCHED
 
 	Enable hierarchical scheduling in BFQ, using the blkio
 	(cgroups-v1) or io (cgroups-v2) controller.
+
+config IOSCHED_SWITCHER
+	bool "Use Noop while the screen is off"
+	depends on IOSCHED_NOOP
+	---help---
+	  This enables a driver that switches the I/O scheduler for a single
+	  block device to Noop when the screen turns off, and back to its
+	  original I/O scheduler after a delay when the screen is turned back
+	  on. It requires being manually initialized from a different driver
+	  in order to grab the request_queue pointer that should have its I/O
+	  scheduler switched to Noop when the screen turns off.
 
 config CFQ_GROUP_IOSCHED
 	bool "CFQ Group Scheduling support"
@@ -110,6 +147,9 @@ choice
 
 	config DEFAULT_CFQ
 		bool "CFQ" if IOSCHED_CFQ=y
+
+	config DEFAULT_FIOPS
+		bool "FIOPS" if IOSCHED_FIOPS=y
 
 	config DEFAULT_BFQ
 		bool "BFQ" if IOSCHED_BFQ=y
@@ -136,6 +176,25 @@ choice
 	config DEFAULT_NOOP
 		bool "No-op"
 
+	config DEFAULT_ZEN
+  		bool "ZEN" if IOSCHED_ZEN=y
+
+	config DEFAULT_TRIPNDROID
+		bool "TRIPNDROID" if IOSCHED_TRIPNDROID=y
+
+	config DEFAULT_SIOPLUS
+		bool "SIOPLUS" if IOSCHED_SIOPLUS=y
+
+	config DEFAULT_ROW
+		bool "ROW" if IOSCHED_ROW=y
+		help
+		  The ROW I/O scheduler gives priority to READ requests
+		  over the WRITE requests when dispatching, without starving
+		  WRITE requests. Requests are kept in priority queues.
+		  Dispatching is done in a RR manner when the dispatch quantum
+		  for each queue is defined according to queue priority.
+		  Most suitable for mobile devices.
+
 endchoice
 
 config DEFAULT_IOSCHED
@@ -148,6 +207,9 @@ config DEFAULT_IOSCHED
 	default "fiops" if DEFAULT_FIOPS
 	default "sio" if DEFAULT_SIO
 	default "maple" if DEFAULT_MAPLE
+	default "tripndroid" if DEFAULT_TRIPNDROID
+	default "sioplus" if DEFAULT_SIOPLUS
+	default "row" if DEFAULT_ROW
 endmenu
 
 endif
