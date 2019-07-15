@@ -73,7 +73,7 @@ obj-$(CONFIG_FB_MSM_QPIC_ILI_QVGA_PANEL) += qpic_panel_ili_qvga.o
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_fb.o mdss_util.o
 obj-$(CONFIG_COMPAT) += mdss_compat_utils.o
 
-obj-$(CONFIG_FB_MSM_MDSS) += mdss_shdisp.o mdss_diag.o
+obj-$(CONFIG_FB_MSM_MDSS) += mdss_shdisp.o mdss_diag.o lcd_notify.o
 
 ifneq (, $(filter F%, $(SH_BUILD_ID))) # CUST_ID_00034
 EXTRA_CFLAGS += -DMDSS_FACTORY_MODE_ENABLE
