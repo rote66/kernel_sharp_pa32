@@ -45,4 +45,6 @@ obj-$(CONFIG_MTD_SPINAND_MT29F)	+= mt29f_spinand/
 obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
 obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
 obj-$(CONFIG_UNISYSSPAR)	+= unisys/
+obj-$(CONFIG_SNAPPY_COMPRESS)   += snappy/
+obj-$(CONFIG_SNAPPY_DECOMPRESS) += snappy/
 obj-$(CONFIG_QCA_CLD_WLAN)	+= qcacld-2.0/
