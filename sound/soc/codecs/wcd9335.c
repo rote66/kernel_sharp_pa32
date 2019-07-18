@@ -130,16 +130,6 @@
 
 static int cpe_debug_mode;
 
-
-#ifdef CONFIG_SOUND_CONTROL
-struct sound_control {
-	struct snd_soc_codec *snd_control_codec;
- 	int default_headphones_value;
-	int default_mic_value;
-	int default_earpiece_value;
-} soundcontrol;
-#endif
-
 #define TASHA_MAX_MICBIAS 4
 #define DAPM_MICBIAS1_STANDALONE "MIC BIAS1 Standalone"
 #define DAPM_MICBIAS2_STANDALONE "MIC BIAS2 Standalone"
@@ -4569,7 +4559,7 @@ static int tasha_codec_enable_spline_src(struct snd_soc_codec *codec,
 	u16 rx_path_cfg_reg;
 	u16 rx_path_ctl_reg;
 	u16 src_clk_reg;
-	u16 src_paired_reg = 0;
+	u16 src_paired_reg;
 	int *src_users, count, spl_src;
 	struct tasha_priv *tasha;
 
@@ -5477,7 +5467,7 @@ static int tasha_codec_enable_dec(struct snd_soc_dapm_widget *w,
 				      msecs_to_jiffies(tx_unmute_delay));
 		if (tasha->tx_hpf_work[decimator].hpf_cut_off_freq !=
 							CF_MIN_3DB_150HZ)
-			queue_delayed_work(system_power_efficient_wq,
+			schedule_delayed_work(
 					&tasha->tx_hpf_work[decimator].dwork,
 					msecs_to_jiffies(300));
 		break;
@@ -12558,75 +12548,6 @@ static struct regulator *tasha_codec_find_ondemand_regulator(
 	return NULL;
 }
 
-#ifdef CONFIG_SOUND_CONTROL
-void update_headphones_volume_boost(unsigned int vol_headphones_boost)
-{
-	int default_headphones_val = soundcontrol.default_headphones_value;
-	int boosted_headphones_val = default_headphones_val + vol_headphones_boost;
-
-	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX1_RX_VOL_CTL, boosted_headphones_val); 
-
- 	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX1_RX_VOL_MIX_CTL, boosted_headphones_val); 
-
- 	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX2_RX_VOL_CTL, boosted_headphones_val); 
-
- 	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX2_RX_VOL_MIX_CTL, boosted_headphones_val); 
-
- 	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_HPH_L_EN, boosted_headphones_val); 
-
- 	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_HPH_R_EN, boosted_headphones_val); 
-
-	pr_info("Sound Control: Boosted Headphones RX1 value %d\n",
- 		snd_soc_read(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX1_RX_VOL_CTL));
-
-	pr_info("Sound Control: Boosted Headphones RX2 value %d\n",
-		snd_soc_read(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX2_RX_VOL_CTL));
-
-	pr_info("Sound Control: Boosted Headphones HPH_L value %d\n",
- 		snd_soc_read(soundcontrol.snd_control_codec,
- 		WCD9335_HPH_L_EN));
-
-	pr_info("Sound Control: Boosted Headphones HPH_R value %d\n",
-		snd_soc_read(soundcontrol.snd_control_codec,
- 		WCD9335_HPH_R_EN));
-
-}
-
-void update_mic_volume_boost(int vol_mic_boost)
-{
-	int default_mic_val = soundcontrol.default_mic_value;
-	int boosted_mic_val = default_mic_val + vol_mic_boost;
-
-	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX0_RX_VOL_CTL, boosted_mic_val);
-
- 	pr_info("Sound Control: Boosted Primary Mic RX0 value %d\n",
- 		snd_soc_read(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX0_RX_VOL_CTL));
-}
-
-void update_earpiece_volume_boost(int vol_earpiece_boost)
-{
-	int default_earpiece_val = soundcontrol.default_earpiece_value;
-	int boosted_earpiece_val = default_earpiece_val + vol_earpiece_boost;
- 
- 	snd_soc_write(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX0_RX_VOL_MIX_CTL, boosted_earpiece_val);
-
- 	pr_info("Sound Control: Boosted Earpiece RX0 value %d\n",
- 		snd_soc_read(soundcontrol.snd_control_codec,
- 		WCD9335_CDC_RX0_RX_VOL_MIX_CTL));
-}
-#endif
-
 static int tasha_codec_probe(struct snd_soc_codec *codec)
 {
 	struct wcd9xxx *control;
@@ -12636,9 +12557,7 @@ static int tasha_codec_probe(struct snd_soc_codec *codec)
 	int i, ret;
 	void *ptr = NULL;
 	struct regulator *supply;
-#ifdef CONFIG_SOUND_CONTROL
-	soundcontrol.snd_control_codec = codec;
-#endif
+
 	control = dev_get_drvdata(codec->dev->parent);
 
 	dev_info(codec->dev, "%s()\n", __func__);
@@ -12831,18 +12750,6 @@ static int tasha_codec_probe(struct snd_soc_codec *codec)
 	if (cpufreq_register_notifier(&sh_get_music_type_nb, SH_CPUFREQ_ADJUST_NOTIFIER))
 		pr_err("%s: cannot register cpufreq notifier\n", __func__);
 #endif /* CONFIG_SH_AUDIO_DRIVER */ /* 21-023 */
-
-#ifdef CONFIG_SOUND_CONTROL
-	/*
-	 * Get the default values during probe
- 	 */
-	soundcontrol.default_headphones_value = snd_soc_read(codec,
-		WCD9335_CDC_RX1_RX_VOL_MIX_CTL);
-	soundcontrol.default_mic_value = snd_soc_read(codec,
-		WCD9335_CDC_RX0_RX_VOL_CTL);
- 	soundcontrol.default_earpiece_value = snd_soc_read(codec,
- 		WCD9335_CDC_RX0_RX_VOL_MIX_CTL);
-#endif
 	return ret;
 
 err_pdata:
