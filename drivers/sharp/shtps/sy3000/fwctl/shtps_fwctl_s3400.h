@@ -15,7 +15,7 @@
 #ifndef __SHTPS_FWCTL_S3400_H__
 #define __SHTPS_FWCTL_S3400_H__
 /* -------------------------------------------------------------------------- */
-#include "shtps_param_extern.h"
+#include "../shtps_param_extern.h"
 
 /* -------------------------------------------------------------------------- */
 #define SHTPS_F01_RMI_CTRL_ADR	0x0b
