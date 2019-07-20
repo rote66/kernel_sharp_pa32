@@ -918,6 +918,7 @@ static int msm_actuator_init(struct msm_actuator_ctrl_t *a_ctrl)
 			a_ctrl->cci_inited = 1;
 		}
 #endif
+	a_ctrl->actuator_state = ACT_OPS_ACTIVE;
 	}
 	
 	a_ctrl->actuator_state = ACT_OPS_ACTIVE;

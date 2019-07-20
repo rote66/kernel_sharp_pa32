@@ -474,6 +474,8 @@ enum aicl_short_deglitch_voters {
 
 #ifdef CONFIG_BATTERY_SH
 static bool full_display_flg = false;
+static bool not_full_display_flg = false;
+static int current_display_soc = 0;
 static bool step_charging_working_flg = false;
 
 static struct smbchg_chip *the_chip = NULL;
@@ -1466,6 +1468,12 @@ static int get_prop_batt_capacity(struct smbchg_chip *chip)
 #ifdef CONFIG_BATTERY_SH
 	if (full_display_flg) {
 		capacity = 100;
+	}
+
+	if (not_full_display_flg) {
+		if (capacity > 99) {
+			capacity = 99;
+		}
 	}
 
 out:
@@ -5296,6 +5304,10 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 	cancel_delayed_work(&chip->vbus_osc_wa_return_check_work);
 	chip->very_weak_charger_sh = false;
 	full_display_flg = false;
+	if (current_display_soc == 99) {
+		not_full_display_flg = true;
+	}
+
 	shbatt_api_battlog_event(SHBATTLOG_EVENT_CHG_REMOVE_USB);
 	if (wake_lock_active(&chip->batt_charge_wake_lock)) {
 		wake_unlock(&chip->batt_charge_wake_lock);
@@ -5418,6 +5430,7 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 		chip->enable_aicl_wake = true;
 	}
 #ifdef CONFIG_BATTERY_SH
+	not_full_display_flg = false;
 	wake_lock(&chip->batt_charge_wake_lock);
 	wake_lock_timeout(&smb_timeout_wake_lock, 1 * HZ);
 #endif /* CONFIG_BATTERY_SH */
@@ -6543,6 +6556,9 @@ static int smbchg_battery_get_property(struct power_supply *psy,
 	/* properties from fg */
 	case POWER_SUPPLY_PROP_CAPACITY:
 		val->intval = get_prop_batt_capacity(chip);
+#ifdef CONFIG_BATTERY_SH
+		current_display_soc = val->intval;
+#endif /* CONFIG_BATTERY_SH */
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval = get_prop_batt_current_now(chip);
