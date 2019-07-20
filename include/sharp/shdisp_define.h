@@ -38,6 +38,9 @@
 #define SHDISP_ILLUMI_COLOR_LED
 
 #define USER_CONFIG_SHDISP_PANEL_HAYABUSA
+#define SHDISP_FPS_HIGH_ENABLE
+#define SHDISP_MDP_PIC_ADJ_ENABLE
+#define SHDISP_PICADJ_USE_QDCM
 #define SHDISP_MAIN_WIDTH  1080
 #define SHDISP_MAIN_HEIGHT 1920
 /* ------------------------------------------------------------------------- */
@@ -52,6 +55,9 @@
 #define SHDISP_ILLUMI_COLOR_LED
 
 #define USER_CONFIG_SHDISP_PANEL_HAYABUSA
+#define SHDISP_FPS_HIGH_ENABLE
+#define SHDISP_MDP_PIC_ADJ_ENABLE
+#define SHDISP_PICADJ_USE_QDCM
 #define SHDISP_MAIN_WIDTH  1080
 #define SHDISP_MAIN_HEIGHT 1920
 /* ------------------------------------------------------------------------- */
@@ -66,6 +72,9 @@
 #define SHDISP_ILLUMI_COLOR_LED
 
 #define USER_CONFIG_SHDISP_PANEL_HAYABUSA
+#define SHDISP_FPS_HIGH_ENABLE
+#define SHDISP_MDP_PIC_ADJ_ENABLE
+#define SHDISP_PICADJ_USE_QDCM
 #define SHDISP_MAIN_WIDTH  1080
 #define SHDISP_MAIN_HEIGHT 1920
 /* ------------------------------------------------------------------------- */
@@ -80,15 +89,13 @@
 #define SHDISP_ILLUMI_COLOR_LED
 
 #define USER_CONFIG_SHDISP_PANEL_HAYABUSA
+#define SHDISP_PICADJ_USE_QDCM
+#define DISABLE_SHDISP_DRIVER
 #define SHDISP_MAIN_WIDTH  1080
 #define SHDISP_MAIN_HEIGHT 1920
 /* ------------------------------------------------------------------------- */
 #endif  /* CONFIG_ARCH_XXX || FEATURE_SH_MODEL_XXX */
 
-
-#ifdef USER_CONFIG_SHDISP_PANEL_HAYABUSA
-#define SHDISP_FPS_HIGH_ENABLE
-#endif  /* USER_CONFIG_SHDISP_PANEL_HAYABUSA */
 
 
 #ifndef CONFIG_SHDISP_PANEL_GEMINI

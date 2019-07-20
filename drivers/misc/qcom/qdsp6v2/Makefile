@@ -1,4 +1,4 @@
-obj-$(CONFIG_MSM_QDSP6V2_CODECS) += aac_in.o qcelp_in.o evrc_in.o amrnb_in.o audio_utils.o
+obj-$(CONFIG_MSM_QDSP6V2_CODECS) += aac_in.o qcelp_in.o evrc_in.o amrnb_in.o g711mlaw_in.o g711alaw_in.o audio_utils.o
 #SH_AUDIO_DRIVER => 21-056
 ifeq ($(USES_SH_WMA_WMV),yes)
 obj-$(CONFIG_MSM_QDSP6V2_CODECS) += audio_wma.o audio_wmapro.o audio_aac.o audio_multi_aac.o audio_alac.o audio_ape.o audio_utils_aio.o

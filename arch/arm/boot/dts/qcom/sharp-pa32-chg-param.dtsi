@@ -98,6 +98,6 @@
 // 	qcom,fg-therm-delay-us;
 	qcom,stby-current = <0x7AA>;
 	qcom,slope-limit-coefficient = <0x90D5>;
-	qcom,cl-high-thresh = <40>;
+	qcom,cl-high-thresh = <70>;
 	qcom,cl-low-thresh = <40>;
 };

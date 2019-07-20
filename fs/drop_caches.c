@@ -13,11 +13,7 @@
 /* A global variable is a bit ugly, but it keeps the code simple */
 int sysctl_drop_caches;
 
-#ifndef CONFIG_SHSYS_CUST
-static void drop_pagecache_sb(struct super_block *sb, void *unused)
-#else	// not CONFIG_SHSYS_CUST
 void drop_pagecache_sb(struct super_block *sb, void *unused)
-#endif	// not CONFIG_SHSYS_CUST
 {
 	struct inode *inode, *toput_inode = NULL;
 

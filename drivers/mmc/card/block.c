@@ -140,6 +140,7 @@ struct mmc_blk_data {
 #define MMC_BLK_DISCARD		BIT(2)
 #define MMC_BLK_SECDISCARD	BIT(3)
 #define MMC_BLK_FLUSH		BIT(4)
+#define MMC_BLK_PARTSWITCH	BIT(5)
 
 	/*
 	 * Only set in main mmc_blk_data associated
@@ -1403,8 +1404,13 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				 EXT_CSD_PART_CONFIG, part_config,
 				 card->ext_csd.part_time);
-		if (ret)
+
+		if (ret) {
+			pr_err("%s: mmc_blk_part_switch failure, %d -> %d\n",
+				mmc_hostname(card->host), main_md->part_curr,
+					md->part_type);
 			return ret;
+		}
 
 		card->ext_csd.part_config = part_config;
 		card->part_curr = md->part_type;
@@ -3586,7 +3592,8 @@ static void mmc_blk_cmdq_err(struct mmc_queue *mq)
 	struct mmc_request *mrq = host->err_mrq;
 	struct mmc_cmdq_context_info *ctx_info = &host->cmdq_ctx;
 	struct request_queue *q;
-	int err;
+	int err, ret;
+	u32 status = 0;
 
 	mmc_host_clk_hold(host);
 	host->cmdq_ops->dumpstate(host);
@@ -3605,8 +3612,14 @@ static void mmc_blk_cmdq_err(struct mmc_queue *mq)
 	/* RED error - Fatal: requires reset */
 	if (mrq->cmdq_req->resp_err) {
 		err = mrq->cmdq_req->resp_err;
-		pr_crit("%s: Response error detected: Device in bad state\n",
-			mmc_hostname(host));
+		if (mmc_host_halt(host) || mmc_host_cq_disable(host)) {
+			ret = get_card_status(host->card, &status, 0);
+			if (ret)
+				pr_err("%s: CMD13 failed with err %d\n",
+						mmc_hostname(host), ret);
+		}
+		pr_err("%s: Response error detected with device status 0x%08x\n",
+			mmc_hostname(host), status);
 		goto reset;
 	}
 
@@ -3697,12 +3710,16 @@ out:
 
 	mmc_cmdq_clk_scaling_stop_busy(host, true, is_dcmd);
 	if (!test_bit(CMDQ_STATE_ERR, &ctx_info->curr_state)) {
+		mmc_host_clk_release(host);
 		wake_up(&ctx_info->wait);
 		mmc_put_card(host->card);
 	}
 
 	if (!ctx_info->active_reqs)
 		wake_up_interruptible(&host->cmdq_ctx.queue_empty_wq);
+
+	if (blk_queue_stopped(mq->queue) && !ctx_info->active_reqs)
+		complete(&mq->cmdq_shutdown_complete);
 
 	return;
 }
@@ -3968,6 +3985,10 @@ static int mmc_blk_cmdq_issue_rq(struct mmc_queue *mq, struct request *req)
 
 	mmc_get_card(card);
 
+#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
+	if (mmc_bus_needs_resume(card->host))
+		mmc_resume_bus(card->host);
+#endif
 	if (!card->host->cmdq_ctx.active_reqs && mmc_card_doing_bkops(card)) {
 		ret = mmc_cmdq_halt(card->host, true);
 		if (ret)
@@ -4048,6 +4069,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 	struct mmc_host *host = card->host;
 	unsigned long flags;
 	unsigned int cmd_flags = req ? req->cmd_flags : 0;
+	int err;
 
 	if (req && !mq->mqrq_prev->req) {
 		/* claim host only for the first request */
@@ -4065,7 +4087,17 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 	}
 
 	ret = mmc_blk_part_switch(card, md);
+
 	if (ret) {
+		err = mmc_blk_reset(md, card->host, MMC_BLK_PARTSWITCH);
+		if (!err) {
+			pr_err("%s: mmc_blk_reset(MMC_BLK_PARTSWITCH) succeeded.\n",
+					mmc_hostname(host));
+			mmc_blk_reset_success(md, MMC_BLK_PARTSWITCH);
+		} else
+			pr_err("%s: mmc_blk_reset(MMC_BLK_PARTSWITCH) failed.\n",
+				mmc_hostname(host));
+
 		if (req) {
 			blk_end_request_all(req, -EIO);
 		}
@@ -4509,6 +4541,13 @@ static const struct mmc_fixup blk_fixups[] =
 		  MMC_QUIRK_LONG_READ_TIME),
 
 	/*
+	 * Hynix eMMC cards need longer data read timeout than
+	 * indicated in CSD.
+	 */
+	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_HYNIX, CID_OEMID_ANY, add_quirk_mmc,
+		  MMC_QUIRK_LONG_READ_TIME),
+
+	/*
 	 * On these Samsung MoviNAND parts, performing secure erase or
 	 * secure trim can result in unrecoverable corruption due to a
 	 * firmware bug.
@@ -4606,14 +4645,7 @@ static int mmc_blk_probe(struct mmc_card *card)
 #else /* CONFIG_MMC_SD_PENDING_RESUME_CUST_SH */
 	pm_runtime_set_autosuspend_delay(&card->dev, MMC_AUTOSUSPEND_DELAY_MS);
 #endif /* CONFIG_MMC_SD_PENDING_RESUME_CUST_SH */
-	/*
-	 * If there is a runtime_idle function, it should take care of
-	 * suspending the card
-	 */
-	if (card->host->bus_ops->runtime_idle)
-		pm_runtime_dont_use_autosuspend(&card->dev);
-	else
-		pm_runtime_use_autosuspend(&card->dev);
+	pm_runtime_use_autosuspend(&card->dev);
 
 	/*
 	 * Don't enable runtime PM for SD-combo cards here. Leave that

@@ -299,6 +299,14 @@ static enum hrtimer_restart shub_sensor_poll(struct hrtimer *tm)
     return HRTIMER_NORESTART;
 }
 
+/* SHMDS_HUB_0304_04 add S */
+void shub_pedo_timer_stop(void)
+{
+    shub_set_sensor_poll(0);
+    cancel_work_sync(&sensor_poll_work);
+}
+/* SHMDS_HUB_0304_04 add E */
+
 void shub_input_report_stepcnt(int32_t *data)
 {
     if(data == NULL) {

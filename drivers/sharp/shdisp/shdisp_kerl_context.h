@@ -1,4 +1,4 @@
-/* include/sharp/shdisp_kerl_context.h  (Display Driver)
+/* drivers/sharp/shdisp/shdisp_kerl_context.h  (Display Driver)
  *
  * Copyright (C) 2011 SHARP CORPORATION
  *

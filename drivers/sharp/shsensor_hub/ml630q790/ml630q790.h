@@ -438,6 +438,7 @@ int shub_set_gpio_no( struct spi_device *client ); /* SHMDS_HUB_0110_01 add */
 int32_t shub_suspend( struct spi_device *client, pm_message_t mesg );
 int32_t shub_resume( struct spi_device *client );
 #endif
+void shub_user_reset(void);                        /* SHMDS_HUB_0304_02 add */
 int32_t shub_initialize( void );
 int32_t shub_update_fw(bool boot, uint8_t *arg_iDataPage1, uint8_t *arg_iDataPage2, uint32_t arg_iLen);
 int32_t shub_get_fw_version(uint8_t *arg_iData);
@@ -609,5 +610,7 @@ int32_t shub_get_acc_delay_ms(void);		/* SHMDS_HUB_0313_01 add */
 
 void shub_set_error_code(uint32_t mode);    /* SHMDS_HUB_0322_02 add */
 uint32_t shub_get_error_code(void);         /* SHMDS_HUB_0322_01 add */
+
+void shub_pedo_timer_stop(void);            /* SHMDS_HUB_0304_04 add */
 
 #endif /* _ML630Q790_H_ */

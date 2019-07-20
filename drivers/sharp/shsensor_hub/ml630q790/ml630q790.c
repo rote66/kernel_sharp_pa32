@@ -511,9 +511,9 @@ module_param(dbg_level, int, 0600);
 #define EXE_HOST_RES_ONLY_FIFO_SIZE  (64)
 #define EXE_HOST_SKIP_MUTEX_UNLOCK   (128)
 #define EXE_HOST_ALL_RSLT            (EXE_HOST_WAIT|EXE_HOST_RES_RSLT|EXE_HOST_ERR)
-#define EXE_HOST_CK_CONNECT          (8)
+#define EXE_HOST_FUP_ERASE           (8)        /* SHMDS_HUB_0343_01 mod */
 #define SHUB_CMD_RETRY_NUM           (3)
-#define SHUB_SEND_CMD_CONNECT        (0x0001u)
+#define SHUB_SEND_CMD_FUP_ERASE      (0x0001u)  /* SHMDS_HUB_0343_01 mod */
 #define SHUB_SEND_CMD_HOST           (0x0002u)
 
 /*
@@ -534,9 +534,9 @@ module_param(dbg_level, int, 0600);
 /*
    Timeout
  */
-#define WAITEVENT_TIMEOUT            (2000)
+#define WAITEVENT_TIMEOUT            (2000)   /* SHMDS_HUB_0343_01 SHMDS_HUB_0348_01 mod */
 #define WAIT_PEDOEVENT_TIMEOUT       (3000)
-#define WAIT_CHECK_CONNECT           (200)
+#define WAIT_CHECK_FUP_ERASE         (2000)  /* SHMDS_HUB_0343_01 mod */
 
 
 /*
@@ -736,6 +736,17 @@ module_param(dbg_level, int, 0600);
 #define SHUB_SIZE_PEDO_STEP_PRM      14             /* SHMDS_HUB_0335_01 add */
 
 #define SHUB_PICKUP_ENABLE_PARAM_STILL  (0x10)      // SHMDS_HUB_2701_01 add
+
+/* SHMDS_HUB_0304_02 add S */
+#define SHUB_ACCESS_FW_UPDATE           (0x0001)
+//#define SHUB_ACCESS_RECOVERY          (0x0002)
+#define SHUB_ACCESS_USER_RESET          (0x0004)
+
+#define SHUB_FW_RESET_RETRY_NUM         (3)
+
+#define SHUB_FW_RESET_BOOT              (0)
+#define SHUB_FW_RESET_USER              (1)
+/* SHMDS_HUB_0304_02 add E */
 
 /* SHMDS_HUB_0120_10 add S */
 #define SHUB_BARO_BUFFER_SIZE       (5)
@@ -990,6 +1001,26 @@ static uint32_t shub_err_code = SHUB_FUP_NO_COMMAND; /* SHMDS_HUB_0322_01 add */
 
 static bool shub_mot_still_enable_flag = false; /* SHMDS_HUB_0332_01 add */
 
+/* SHMDS_HUB_0703_01 add S */
+static uint16_t s_tTimeoutCmd[2];
+static uint8_t s_tTimeoutIrqEnable[2];
+static uint32_t s_tTimeoutErrCnt = 0;
+static u64 s_tTimeoutTimestamp[2];     /* SHMDS_HUB_0703_02 mod */
+
+static uint8_t s_tRwErrAdr[2];
+static uint16_t s_tRwErrSize[2];
+static int32_t s_tRwErrCode[2];
+static uint32_t s_tRwErrCnt = 0;
+static u64 s_tRwErrTimestamp[2];       /* SHMDS_HUB_0703_02 mod */
+/* SHMDS_HUB_0703_01 add E */
+
+static uint32_t shub_access_flg = 0;    /* SHMDS_HUB_0304_02 add */
+
+static uint64_t shub_dbg_host_wcnt = 0; /* SHMDS_HUB_0705_01 add */
+static uint64_t shub_dbg_host_rcnt = 0; /* SHMDS_HUB_0705_01 add */
+
+static uint32_t shub_reset_cnt = 0;               /* SHMDS_HUB_0304_02 add */
+
 #ifdef SHUB_SUSPEND
 static bool s_is_suspend;
 #endif
@@ -1173,13 +1204,13 @@ int shub_api_get_face_down_info(struct shub_face_acc_info *info)
         return SHUB_RC_ERR;
     }
     
-    if(((iCurrentSensorEnable & (SHUB_ACTIVE_ACC | SHUB_ACTIVE_SHEX_ACC)) == 0) || s_is_suspend){ /* SHMDS_HUB_1301_02 add */
+    if(((iCurrentSensorEnable & (SHUB_ACTIVE_ACC | SHUB_ACTIVE_SHEX_ACC)) == 0) || s_is_suspend || shub_access_flg){ /* SHMDS_HUB_1301_02 add */
         info->nJudge = 0;
         info->nStat = 0;
         info->nX = 0;
         info->nY = 0;
         info->nZ = 0;
-        DBG(DBG_LV_DATA, "get_face_info( Judge=0, stat=0(0x%x), XYZ=0, is_suspend=%d )\n", iCurrentSensorEnable, s_is_suspend);
+        DBG(DBG_LV_DATA, "get_face_info( Judge=0, stat=0(0x%x), XYZ=0, is_suspend=%d, flg=0x%x )\n", iCurrentSensorEnable, s_is_suspend, shub_access_flg); /* SHMDS_HUB_0304_02 mod */
         return SHUB_RC_OK;
     }
     
@@ -1215,13 +1246,13 @@ int shub_api_get_face_check_info(struct shub_face_acc_info *info)
         return SHUB_RC_ERR;
     }
     
-    if(((iCurrentSensorEnable & (SHUB_ACTIVE_ACC | SHUB_ACTIVE_SHEX_ACC)) == 0) || s_is_suspend){
+    if(((iCurrentSensorEnable & (SHUB_ACTIVE_ACC | SHUB_ACTIVE_SHEX_ACC)) == 0) || s_is_suspend || shub_access_flg){ /* SHMDS_HUB_0304_02 mod */
         info->nJudge = 0;
         info->nStat = 0;
         info->nX = 0;
         info->nY = 0;
         info->nZ = 0;
-        DBG(DBG_LV_DATA, "get_face_check( Judge=0, stat=0(0x%x), XYZ=0, is_suspend=%d )\n", iCurrentSensorEnable, s_is_suspend);
+        DBG(DBG_LV_DATA, "get_face_check( Judge=0, stat=0(0x%x), XYZ=0, is_suspend=%d, flg=0x%x )\n", iCurrentSensorEnable, s_is_suspend, shub_access_flg); /* SHMDS_HUB_0304_02 mod */
         return SHUB_RC_OK;
     }
     
@@ -1506,6 +1537,52 @@ void shub_qos_end(void)
 }
 // SHMDS_HUB_1101_01 add E
 
+/* SHMDS_HUB_0703_01 add S */
+static void collect_hostcmd_timeout_log(uint16_t cmd)
+{
+    if(s_tTimeoutErrCnt == 0){
+        s_tTimeoutTimestamp[0] = local_clock(); /* SHMDS_HUB_0703_02 mod */
+        s_tTimeoutCmd[0] = cmd;
+        s_tTimeoutIrqEnable[0] = atomic_read(&g_bIsIntIrqEnable);
+    }else{
+        s_tTimeoutTimestamp[1] = local_clock(); /* SHMDS_HUB_0703_02 mod */
+        s_tTimeoutCmd[1] = cmd;
+        s_tTimeoutIrqEnable[1] = atomic_read(&g_bIsIntIrqEnable);
+    }
+    if(s_tTimeoutErrCnt < 0xFFFFFFFF){
+        s_tTimeoutErrCnt++;
+    }
+}
+
+static void collect_hosif_err_log(uint8_t adr, uint16_t size, int32_t ret)
+{
+    if(s_tRwErrCnt == 0){
+        s_tRwErrTimestamp[0] = local_clock();   /* SHMDS_HUB_0703_02 mod */
+        s_tRwErrAdr[0] = adr;
+        s_tRwErrSize[0] = size;
+        s_tRwErrCode[0] = ret;
+    }else{
+        s_tRwErrTimestamp[1] = local_clock();   /* SHMDS_HUB_0703_02 mod */
+        s_tRwErrAdr[1] = adr;
+        s_tRwErrSize[1] = size;
+        s_tRwErrCode[1] = ret; 
+    }
+    if(s_tRwErrCnt < 0xFFFFFFFF){
+        s_tRwErrCnt++;
+    }
+}
+/* SHMDS_HUB_0703_01 add E */
+
+/* SHMDS_HUB_0703_02 add E */
+static void shub_print_time(struct seq_file *s, u64 ts)
+{
+    unsigned long rem_nsec;
+    
+    rem_nsec = do_div(ts, 1000000000);
+    seq_printf(s, "time=%lu.%06lu", (unsigned long)ts, rem_nsec / 1000);
+}
+/* SHMDS_HUB_0703_02 add E */
+
 // SHMDS_HUB_0701_03 add S
 static uint64_t shub_dbg_cnt_irq;
 static uint64_t shub_dbg_cnt_cmd;
@@ -1516,6 +1593,7 @@ static uint64_t shub_dbg_cnt_gyro;
 static uint64_t shub_dbg_cnt_fusion;
 static uint64_t shub_dbg_cnt_cust;
 static uint64_t shub_dbg_cnt_other;
+static uint64_t shub_dbg_cnt_none;  /* SHMDS_HUB_0704_01 add */
 
 static void shub_dbg_collect_irq_log(uint16_t intreq)
 {
@@ -1547,6 +1625,11 @@ static void shub_dbg_collect_irq_log(uint16_t intreq)
     if(intreq & ~INTREQ_MASK) {
         shub_dbg_cnt_other++;
     }
+/* SHMDS_HUB_0704_01 add S */
+    if(intreq == 0) {
+        shub_dbg_cnt_none++;
+    }
+/* SHMDS_HUB_0704_01 add E */
 }
 
 static void shub_dbg_clr_irq_log(void)
@@ -1560,23 +1643,77 @@ static void shub_dbg_clr_irq_log(void)
     shub_dbg_cnt_fusion = 0;
     shub_dbg_cnt_cust = 0;
     shub_dbg_cnt_other = 0;
+    shub_dbg_cnt_none = 0;  /* SHMDS_HUB_0704_01 add */
 }
 
 static void shub_dbg_out_irq_log(void)
 {
-/* SHMDS_HUB_0120_01 mod S  SHMDS_HUB_0122_01 add S */
+/* SHMDS_HUB_0120_01 SHMDS_HUB_0122_01 SHMDS_HUB_0704_01 S */
 //#ifdef CONFIG_BARO_SENSOR		/* SHMDS_HUB_2603_01 del */
-    printk("[shub][dbg] irq=%lld,cmd=%lld,a=%lld,b=%lld,m=%lld,g=%lld,f=%lld,c=%lld,o=%lld,en=%08x(%08x)\n",
+    printk("[shub][dbg] irq=%lld,cmd=%lld,a=%lld,b=%lld,m=%lld,g=%lld,f=%lld,c=%lld,o=%lld,no=%lld,en=%08x(%08x)\n",
             shub_dbg_cnt_irq, shub_dbg_cnt_cmd, shub_dbg_cnt_acc, shub_dbg_cnt_baro, shub_dbg_cnt_mag,
 //#else
 //    printk("[shub][dbg] irq=%lld,cmd=%lld,a=%lld,m=%lld,g=%lld,f=%lld,c=%lld,o=%lld,en=%08x(%08x)\n",
 //            shub_dbg_cnt_irq, shub_dbg_cnt_cmd, shub_dbg_cnt_acc, shub_dbg_cnt_mag,
 //#endif
-            shub_dbg_cnt_gyro, shub_dbg_cnt_fusion, shub_dbg_cnt_cust, shub_dbg_cnt_other,
+            shub_dbg_cnt_gyro, shub_dbg_cnt_fusion, shub_dbg_cnt_cust, shub_dbg_cnt_other, shub_dbg_cnt_none,
             atomic_read(&g_CurrentSensorEnable), atomic_read(&g_CurrentLoggingSensorEnable));
-/* SHMDS_HUB_0120_01 mod E  SHMDS_HUB_0122_01 add E */
+/* SHMDS_HUB_0120_01 SHMDS_HUB_0122_01 SHMDS_HUB_0704_01 E */
 }
 // SHMDS_HUB_0701_03 add E
+
+void shub_sensor_timer_stop(void)
+{
+    shub_suspend_acc();
+    shub_suspend_mag();
+    shub_suspend_mag_uncal();
+    shub_suspend_gyro();
+    shub_suspend_gyro_uncal();
+    shub_suspend_orien();
+    shub_suspend_grav();
+    shub_suspend_linear();
+    shub_suspend_rot();
+    shub_suspend_rot_gyro();
+    shub_suspend_rot_mag();
+    shub_suspend_exif();        // SHMDS_HUB_0203_01 add
+/* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
+#ifdef CONFIG_BARO_SENSOR
+    shub_suspend_baro();
+#endif
+/* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add E */
+}
+
+/* SHMDS_HUB_0304_02 add S */
+void shub_user_reset_exe(void)
+{
+    int32_t ret;
+    
+    /* timer stop */
+    suspendBatchingProc();
+    shub_sensor_timer_stop();
+    shub_pedo_timer_stop();    /* SHMDS_HUB_0304_04 add */
+    
+    /* initialize */
+    ret = shub_initialize();
+    if(ret != SHUB_RC_OK) {
+        DBG(DBG_LV_ERROR, "%s : initialize Error!\n", __FUNCTION__);
+    }
+}
+
+void shub_user_reset(void)
+{
+    DBG(DBG_LV_ERROR, "%s : start\n", __FUNCTION__);
+    
+    shub_access_flg |= SHUB_ACCESS_USER_RESET;
+    
+    shub_user_reset_exe();
+    
+    shub_access_flg &= ~SHUB_ACCESS_USER_RESET;
+    shub_reset_cnt++;
+    
+    DBG(DBG_LV_ERROR, "%s : end\n", __FUNCTION__);
+}
+/* SHMDS_HUB_0304_02 add E */
 
 static int32_t shub_check_access(void);
 static int32_t shub_boot_fw_check(void);
@@ -1709,6 +1846,18 @@ static struct timespec shub_get_timestamp(void)
     return ts;
 }
 
+/* SHMDS_HUB_0705_01 add S */
+static int32_t hostif_write_exe(uint8_t adr, const uint8_t *data, uint16_t size)
+{
+    /* suspend access check */
+    if((s_is_suspend) && (!shub_suspend_call_flg)){
+        shub_dbg_host_wcnt++;
+        DBG(DBG_LV_ERROR, "%s : suspend access Err(cnt=%lld, addr=0x%02x, size=%d)\n", __func__, shub_dbg_host_wcnt, adr, size);
+    }
+    return hostif_write_proc(adr, data, size);
+}
+/* SHMDS_HUB_0705_01 add E */
+
 static int32_t hostif_write(uint8_t adr, const uint8_t *data, uint16_t size)
 {
     int32_t i;
@@ -1718,7 +1867,7 @@ static int32_t hostif_write(uint8_t adr, const uint8_t *data, uint16_t size)
 
     for(i=0; i<ACC_SPI_RETRY_NUM; i++)
     {
-        ret = hostif_write_proc(adr, data, size);
+        ret = hostif_write_exe(adr, data, size); /* SHMDS_HUB_0705_01 mod */
         if(ret == 0){
             return 0;
 
@@ -1731,9 +1880,22 @@ static int32_t hostif_write(uint8_t adr, const uint8_t *data, uint16_t size)
             break;
         }
     }
+    collect_hosif_err_log(adr, size, ret);    /* SHMDS_HUB_0703_01 add */
 
     return ret;
 }
+
+/* SHMDS_HUB_0705_01 add S */
+static int32_t hostif_read_exe(uint8_t adr, uint8_t *data, uint16_t size)
+{
+    /* suspend access check */
+    if((s_is_suspend) && (!shub_suspend_call_flg)){
+        shub_dbg_host_rcnt++;
+        DBG(DBG_LV_ERROR, "%s : suspend access Err(cnt=%lld, addr=0x%02x, size=%d)\n", __func__, shub_dbg_host_rcnt, adr, size);
+    }
+    return hostif_read_proc(adr, data, size);
+}
+/* SHMDS_HUB_0705_01 add E */
 
 static int32_t hostif_read(uint8_t adr, uint8_t *data, uint16_t size)
 {
@@ -1742,7 +1904,7 @@ static int32_t hostif_read(uint8_t adr, uint8_t *data, uint16_t size)
 
     for(i=0; i<ACC_SPI_RETRY_NUM; i++)
     {
-        ret = hostif_read_proc(adr, data, size);
+        ret = hostif_read_exe(adr, data, size); /* SHMDS_HUB_0705_01 mod */
         if(ret == 0){
             SHUB_DBG_SPIR(adr, data, size); // SHMDS_HUB_0104_08 add
             return 0;
@@ -1756,6 +1918,7 @@ static int32_t hostif_read(uint8_t adr, uint8_t *data, uint16_t size)
             break;
         }
     }
+    collect_hosif_err_log(adr, size, ret);    /* SHMDS_HUB_0703_01 add */
 
     return ret;
 }
@@ -1775,11 +1938,11 @@ static void pending_base_time(int32_t arg_iSensType, ktime_t *time)
     if(arg_iSensType & SHUB_ACTIVE_ACC){
         s_pending_baseTime.acc = pending_baseTime;
     }
-    if(arg_iSensType & SHUB_ACTIVE_GYRO){
+    if(arg_iSensType & (SHUB_ACTIVE_GYRO | SHUB_ACTIVE_GYROUNC)){ /* SHMDS_HUB_0339_01 mod */
         s_pending_baseTime.gyro = pending_baseTime;
         DBG(DBG_LV_TIME, "[time] s_pending_baseTime( gyro=%lld )\n", s_pending_baseTime.gyro.tv64);
     }
-    if(arg_iSensType & SHUB_ACTIVE_MAG){
+    if(arg_iSensType & (SHUB_ACTIVE_MAG | SHUB_ACTIVE_MAGUNC)){   /* SHMDS_HUB_0339_01 mod */
         s_pending_baseTime.mag = pending_baseTime;
     }
 /* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
@@ -1826,10 +1989,10 @@ static void pending_base_time(int32_t arg_iSensType)
     if(arg_iSensType & SHUB_ACTIVE_ACC){
         s_pending_baseTime.acc = pending_baseTime;
     }
-    if(arg_iSensType & SHUB_ACTIVE_GYRO){
+    if(arg_iSensType & (SHUB_ACTIVE_GYRO | SHUB_ACTIVE_GYROUNC)){ /* SHMDS_HUB_0339_01 mod */
         s_pending_baseTime.gyro = pending_baseTime;
     }
-    if(arg_iSensType & SHUB_ACTIVE_MAG){
+    if(arg_iSensType & (SHUB_ACTIVE_MAG | SHUB_ACTIVE_MAGUNC)){   /* SHMDS_HUB_0339_01 mod */
         s_pending_baseTime.mag = pending_baseTime;
     }
 /* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
@@ -1905,11 +2068,11 @@ static int32_t update_base_time(int32_t arg_iSensType, ktime_t *time )
         if(arg_iSensType & SHUB_ACTIVE_ACC){
             s_beseTime.acc = s_pending_baseTime.acc;
         }
-        if(arg_iSensType & SHUB_ACTIVE_GYRO){
+        if(arg_iSensType & (SHUB_ACTIVE_GYRO | SHUB_ACTIVE_GYROUNC)){ /* SHMDS_HUB_0339_01 mod */
             s_beseTime.gyro = s_pending_baseTime.gyro;
             DBG(DBG_LV_TIME, "[time] s_beseTime null( gyro=%lld )\n", s_beseTime.gyro.tv64); /* SHMDS_HUB_0312_01 add */
         }
-        if(arg_iSensType & SHUB_ACTIVE_MAG){
+        if(arg_iSensType & (SHUB_ACTIVE_MAG | SHUB_ACTIVE_MAGUNC)){   /* SHMDS_HUB_0339_01 mod */
             s_beseTime.mag = s_pending_baseTime.mag;
         }
 /* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
@@ -1950,11 +2113,11 @@ static int32_t update_base_time(int32_t arg_iSensType, ktime_t *time )
         if(arg_iSensType & SHUB_ACTIVE_ACC){
             s_beseTime.acc = *time;
         }
-        if(arg_iSensType & SHUB_ACTIVE_GYRO){
+        if(arg_iSensType & (SHUB_ACTIVE_GYRO | SHUB_ACTIVE_GYROUNC)){ /* SHMDS_HUB_0339_01 mod */
             s_beseTime.gyro = *time;
             DBG(DBG_LV_TIME, "[time] s_beseTime addr( gyro=%lld )\n", s_beseTime.gyro.tv64); /* SHMDS_HUB_0312_01 add */
         }
-        if(arg_iSensType & SHUB_ACTIVE_MAG){
+        if(arg_iSensType & (SHUB_ACTIVE_MAG | SHUB_ACTIVE_MAGUNC)){   /* SHMDS_HUB_0339_01 mod */
             s_beseTime.mag = *time;
         }
 /* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
@@ -2159,10 +2322,10 @@ static struct timespec event_time_to_offset(int32_t arg_iSensType,int32_t eventO
     if(arg_iSensType & SHUB_ACTIVE_ACC){
         baseTime = s_beseTime.acc;
     }
-    if(arg_iSensType & SHUB_ACTIVE_GYRO){
+    if(arg_iSensType & (SHUB_ACTIVE_GYRO | SHUB_ACTIVE_GYROUNC)){ /* SHMDS_HUB_0339_01 mod */
         baseTime =  s_beseTime.gyro;
     }
-    if(arg_iSensType & SHUB_ACTIVE_MAG){
+    if(arg_iSensType & (SHUB_ACTIVE_MAG | SHUB_ACTIVE_MAGUNC)){   /* SHMDS_HUB_0339_01 mod */
         baseTime =  s_beseTime.mag;
     }
 /* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
@@ -2212,7 +2375,7 @@ static struct timespec event_time_to_offset(int32_t arg_iSensType,int32_t eventO
 
     eventTime  = ktime_add_ns(baseTime, eventOffsetTime * sensorTaskCycle_ns);
 // SHMDS_HUB_0312_01 add S
-//  if(arg_iSensType & SHUB_ACTIVE_GYRO){
+//  if(arg_iSensType & (SHUB_ACTIVE_GYRO | SHUB_ACTIVE_GYROUNC)){ /* SHMDS_HUB_0339_01 mod */
 //      DBG(DBG_LV_TIME, "[shub][time] Base=%lld, Cycle=%llu, Cnt=%d\n", baseTime.tv64, sensorTaskCycle_ns, eventOffsetTime);
 //  }
 // SHMDS_HUB_0312_01 add E
@@ -3203,12 +3366,17 @@ static int32_t shub_hostcmd_exe(const HostCmd *prm, HostCmdRes *res, uint8_t mod
     }
 
     if((mode & EXE_HOST_WAIT) == EXE_HOST_WAIT){
-        if((mode & EXE_HOST_CK_CONNECT) == EXE_HOST_CK_CONNECT){
-            ret = shub_waitcmd(SHUB_SEND_CMD_CONNECT);
+        if((mode & EXE_HOST_FUP_ERASE) == EXE_HOST_FUP_ERASE){    /* SHMDS_HUB_0343_01 mod */
+            ret = shub_waitcmd(SHUB_SEND_CMD_FUP_ERASE);
         }else{
             ret = shub_waitcmd(SHUB_SEND_CMD_HOST);
         }
         if(ret != SHUB_RC_OK) {
+/* SHMDS_HUB_0703_01 add S */
+            if(ret == SHUB_RC_ERR_TIMEOUT){
+                collect_hostcmd_timeout_log(prm->cmd.u16);
+            }
+/* SHMDS_HUB_0703_01 add E */
             if(((mode & EXE_HOST_EX_NO_RECOVER) == EXE_HOST_EX_NO_RECOVER) && 
                     (ret == SHUB_RC_ERR_TIMEOUT)){
                 goto ERROR;
@@ -3319,8 +3487,8 @@ static int32_t shub_waitcmd(uint16_t intBit)
     long timeout;
     int32_t retry = 300;
 
-    if(intBit == SHUB_SEND_CMD_CONNECT){
-        timeout = msecs_to_jiffies(WAIT_CHECK_CONNECT);
+    if(intBit == SHUB_SEND_CMD_FUP_ERASE){    /* SHMDS_HUB_0343_01 mod */
+        timeout = msecs_to_jiffies(WAIT_CHECK_FUP_ERASE);
     }else{
         timeout = msecs_to_jiffies(WAITEVENT_TIMEOUT);
     }
@@ -3395,7 +3563,7 @@ static irqreturn_t shub_irq_handler(int32_t irq, void *dev_id)
 static void shub_int_work_func(struct work_struct *work)
 {
     uint8_t    cmd_reg_clear[2]={0};
-    uint8_t    err_intreq[4];
+    uint8_t    err_intreq[4]={0};    /* SHMDS_HUB_0346_01 mod */
     uint16_t   intreq;
     int32_t    iCurrentEnable;
 
@@ -6146,7 +6314,8 @@ static int32_t shub_activate_exec(int32_t arg_iSensType, int32_t arg_iEnable, in
     if(iCurrentSensorEnable & ACTIVE_MAG_GROUP_MASK){
         setCal |= HC_MAG_VALID;
     }
-    if(iCurrentSensorEnable & ACTIVE_GYRO_GROUP_MASK){
+//  if(iCurrentSensorEnable & ACTIVE_GYRO_GROUP_MASK){                        /* SHMDS_HUB_0344_01 mod */
+    if(iCurrentSensorEnable & (ACTIVE_GYRO_GROUP_MASK & ~SHUB_ACTIVE_TWIST)){ /* SHMDS_HUB_0344_01 mod */
         setCal |= HC_GYRO_VALID;
     }
 /* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
@@ -6212,18 +6381,18 @@ static int32_t shub_activate_exec(int32_t arg_iSensType, int32_t arg_iEnable, in
 #endif
 /* SHMDS_HUB_0120_10 add E */
 
-/* SHMDS_HUB_0120_01 mod S  SHMDS_HUB_0122_01 add S  SHMDS_HUB_0332_01 mod S */
+/* SHMDS_HUB_0120_01 mod S  SHMDS_HUB_0122_01 add S  SHMDS_HUB_0332_01 SHMDS_HUB_2304_01 mod S */
 #ifdef CONFIG_BARO_SENSOR
 /* SHMDS_HUB_0317_01 add S */
     if ( enable_sensor &
-        ( SHUB_ACTIVE_ACC | GYRO_GROUP_MASK | MAG_GROUP_MASK | SHUB_ACTIVE_BARO | SHUB_ACTIVE_RV_NONGYRO | SHUB_ACTIVE_RV_NONMAG | FUSION_9AXIS_GROUP_MASK ) ||
+        ( SHUB_ACTIVE_ACC | GYRO_GROUP_MASK | MAG_GROUP_MASK | SHUB_ACTIVE_BARO | SHUB_ACTIVE_RV_NONGYRO | SHUB_ACTIVE_RV_NONMAG | FUSION_9AXIS_GROUP_MASK | FUSION_6AXIS_GYRO_MAG_MASK) ||
         ((enable_sensor & SHUB_ACTIVE_MOTIONDEC) && shub_mot_still_enable_flag) ) {
 #else
     if ( enable_sensor &
-        ( SHUB_ACTIVE_ACC | GYRO_GROUP_MASK | MAG_GROUP_MASK | SHUB_ACTIVE_RV_NONGYRO | SHUB_ACTIVE_RV_NONMAG | FUSION_9AXIS_GROUP_MASK ) ||
+        ( SHUB_ACTIVE_ACC | GYRO_GROUP_MASK | MAG_GROUP_MASK | SHUB_ACTIVE_RV_NONGYRO | SHUB_ACTIVE_RV_NONMAG | FUSION_9AXIS_GROUP_MASK | FUSION_6AXIS_GYRO_MAG_MASK) ||
         ((enable_sensor & SHUB_ACTIVE_MOTIONDEC) && shub_mot_still_enable_flag) ) {
 #endif
-/* SHMDS_HUB_0120_01 mod E  SHMDS_HUB_0122_01 add E  SHMDS_HUB_0332_01 mod E */
+/* SHMDS_HUB_0120_01 mod E  SHMDS_HUB_0122_01 add E  SHMDS_HUB_0332_01 SHMDS_HUB_2304_01 mod E */
         newAccMode = 0;
         newDeepSleepMode = 0;
     } else {
@@ -6469,6 +6638,12 @@ static int32_t shub_activate_logging_exec(int32_t arg_iSensType, int32_t arg_iEn
             iCurrentLoggingEnable
        );
 
+/* SHMDS_HUB_0342_01 add S */
+    if (arg_iEnable == POWER_ENABLE) {
+        logging_flush_exec();
+    }
+/* SHMDS_HUB_0342_01 add E */
+
     if(arg_iEnable == POWER_ENABLE){
         iCurrentLoggingEnable |= arg_iSensType;
     }else{
@@ -6615,7 +6790,12 @@ static int32_t shub_activate_logging_exec(int32_t arg_iSensType, int32_t arg_iEn
         update_base_time(arg_iSensType,NULL);
     }
 
-    logging_flush_exec();
+/* SHMDS_HUB_0342_01 add S */
+    if (arg_iEnable == POWER_DISABLE) {
+        logging_flush_exec();
+    }
+/* SHMDS_HUB_0342_01 add E */
+
     return SHUB_RC_OK;
 }
 
@@ -6888,7 +7068,7 @@ int32_t shub_hostif_write(uint8_t adr, const uint8_t *data, uint16_t size)
     SHUB_DBG_SPIW(adr, data, size); // SHMDS_HUB_0104_08 add
     for(i=0; i<ACC_SPI_RETRY_NUM; i++)
     {
-        ret = hostif_write_proc(adr, data, size);
+        ret = hostif_write_exe(adr, data, size); /* SHMDS_HUB_0705_01 mod */
         if(ret == 0){
             return 0;
 
@@ -6919,7 +7099,7 @@ int32_t shub_hostif_read(uint8_t adr, uint8_t *data, uint16_t size)
 
     for(i=0; i<ACC_SPI_RETRY_NUM; i++)
     {
-        ret = hostif_read_proc(adr, data, size);
+        ret = hostif_read_exe(adr, data, size); /* SHMDS_HUB_0705_01 mod */
         if(ret == 0){
             SHUB_DBG_SPIR(adr, data, size); // SHMDS_HUB_0104_08 add
             return 0;
@@ -7218,7 +7398,7 @@ int32_t shub_init_param( void )
 
     // Get Sensor Version
     cmd.cmd.u16 = HC_MCU_GET_VERSION;
-    ret = shub_hostcmd(&cmd, &res, (EXE_HOST_ALL | EXE_HOST_CK_CONNECT |EXE_HOST_EX_NO_RECOVER), 0);
+    ret = shub_hostcmd(&cmd, &res, (EXE_HOST_ALL | EXE_HOST_EX_NO_RECOVER), 0);  /* SHMDS_HUB_0343_01 mod */
     if((SHUB_RC_OK != ret) || (0 != res.err.u16)) {
         DBG(DBG_LV_ERROR, "FW Version Get Error HC_MCU_GET_VERSION(%d) err %x\n",cmd.prm.u8[0], res.err.u16);
         return SHUB_RC_ERR;
@@ -7473,6 +7653,91 @@ int32_t shub_initialize( void )
     return SHUB_RC_OK;
 }
 
+/* SHMDS_HUB_0304_02 add S */
+static int32_t shub_fw_reset_exe(int mode)
+{
+    uint8_t reg = 0xFF; /* SHMDS_HUB_0322_03 add */
+    int32_t cnt = 1;    /* SHMDS_HUB_0322_03 SHMDS_HUB_0322_04 add */
+    Word sreg;          /* SHMDS_HUB_0322_03 add */
+    
+#ifdef USE_RESET_SIGNAL
+#ifdef USE_REMAP_SIGNAL
+    if(mode == SHUB_FW_RESET_BOOT) {
+        shub_gpio_set_value(SHUB_GPIO_PIN_BRMP, 1);  /* SHMDS_HUB_0110_01 mod */
+    }else{
+        shub_gpio_set_value(SHUB_GPIO_PIN_BRMP, 0);  /* SHMDS_HUB_0110_01 mod */
+    }
+#endif
+    shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 0);     /* SHMDS_HUB_0110_01 mod */
+    usleep(SHUB_RESET_PLUSE_WIDTH * 1000);           /* SHMDS_HUB_0102_11 mod */
+    shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 1);     /* SHMDS_HUB_0110_01 mod */
+    usleep(SHUB_RESET_TIME * 1000);                  /* SHMDS_HUB_0102_11 mod */
+#endif
+    
+#ifndef NO_HOST
+    if(mode == SHUB_FW_RESET_USER) {
+        while(1) {
+            hostif_read(STATUS, &reg, sizeof(reg));
+            if(reg == 0x00) {
+                DBG(DBG_LV_INFO, "STATUS OK!!\n");
+                break;
+            }
+            usleep(SHUB_RESET_TIME * 1000); /* SHMDS_HUB_0102_11 mod */
+            if(cnt++ >= 10) {               /* SHMDS_HUB_0322_04 mod */
+                DBG(DBG_LV_ERROR, "shub_initialize:STATUS read TimeOut. reg=%x \n", reg);
+                return SHUB_RC_ERR_TIMEOUT;
+            }
+        }
+    }
+#endif
+    
+    reg = 0x04;
+    hostif_write(CFG, &reg, sizeof(reg));
+    hostif_read(INTREQ0, sreg.u8, 2);
+    
+    reg = 0x00;
+    hostif_write(INTMASK0, &reg, sizeof(reg));
+    hostif_write(INTMASK1, &reg, sizeof(reg));
+    
+    ENABLE_IRQ;
+    return SHUB_RC_OK;
+}
+
+static int32_t shub_fw_reset_retry(int mode)
+{
+    int32_t ret;
+    int32_t i;
+    
+    for(i=0; i<SHUB_FW_RESET_RETRY_NUM; i++) {
+        ret = shub_fw_reset_exe(mode);
+        if(ret == SHUB_RC_OK) {
+            if(i > 0) {
+                DBG(DBG_LV_ERROR, "%s : FW Reset OK( mode=%d, retry=%d )\n", __FUNCTION__, mode, i);
+            }
+            return ret;
+        }else{
+            /* timeout */
+            DBG(DBG_LV_ERROR, "%s : FW Reset Error( mode=%d, retry=%d )\n", __FUNCTION__, mode, i);
+        }
+    }
+    /* retry over!! */
+    DBG(DBG_LV_ERROR, "%s : FW Reset Retry over!!( mode=%d, retry=%d, ret=%d )\n", __FUNCTION__, mode, i, ret);
+    return ret;
+}
+
+static int32_t shub_fw_reset(int mode)
+{
+    int32_t ret;
+    
+    mutex_lock(&s_hostCmdMutex);
+    
+    ret = shub_fw_reset_retry(mode);
+    
+    mutex_unlock(&s_hostCmdMutex);
+    return ret;
+}
+/* SHMDS_HUB_0304_02 add E */
+
 static int32_t shub_update_firmware(bool boot, uint8_t *arg_iDataPage1, uint8_t *arg_iDataPage2, uint32_t arg_iLen)
 {
     uint8_t reg = 0xFF;
@@ -7496,45 +7761,60 @@ static int32_t shub_update_firmware(bool boot, uint8_t *arg_iDataPage1, uint8_t 
     //      goto ERROR;
     //  }
 
-    if(boot){
-#ifdef USE_RESET_SIGNAL
-#ifdef USE_REMAP_SIGNAL
-        shub_gpio_set_value(SHUB_GPIO_PIN_BRMP, 1);  /* SHMDS_HUB_0110_01 mod */
-#endif
-        shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 0); /* SHMDS_HUB_0110_01 mod */
-        usleep(SHUB_RESET_PLUSE_WIDTH * 1000);       /* SHMDS_HUB_0102_11 mod */
-        shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 1); /* SHMDS_HUB_0110_01 mod */
-#endif
-        usleep(SHUB_RESET_TIME * 1000);              /* SHMDS_HUB_0102_11 mod */
-    }else{
-        ENABLE_IRQ;
+    shub_fw_reset(SHUB_FW_RESET_BOOT); /* SHMDS_HUB_0304_02 SHMDS_HUB_0304_03 add */
 
-        cmd.cmd.u16 = HC_MCU_FUP_START;
-        cmd.prm.u8[0] = 0x55;
-        cmd.prm.u8[1] = 0xAA;
-        ret = shub_hostcmd(&cmd, &res, EXE_HOST_WAIT|EXE_HOST_ERR, 2);
-        if(ret != SHUB_RC_OK) {
-            DBG(DBG_LV_ERROR, "Communication Error!\n");
-            ret = SHUB_RC_ERR;
-            goto ERROR;
-        }
-        if(res.err.u16 == ERROR_FUP_CERTIFICATION) {
-            DBG(DBG_LV_ERROR, "Certification Error!\n");
-            ret = SHUB_RC_ERR;
-            goto ERROR;
-        }
-        usleep(SHUB_RESET_TIME * 1000); /* SHMDS_HUB_0102_11 mod */
-    } 
-    reg = 0x04;
-    hostif_write(CFG, &reg, sizeof(reg));
+/* SHMDS_HUB_0304_03 del E */
+//     if(boot){
+//         shub_fw_reset(SHUB_FW_RESET_BOOT);
+//     }else{
+//         ret = shub_fw_update();
+//         if(ret != SHUB_RC_OK) {
+//             goto ERROR;
+//         }
+//     }
+/* SHMDS_HUB_0304_03 del E */
 
-    hostif_read(INTREQ0, sreg.u8, 2);
-
-    reg = 0x00;
-    hostif_write(INTMASK0, &reg, sizeof(reg));
-    hostif_write(INTMASK1, &reg, sizeof(reg));
-
-    ENABLE_IRQ;
+/* SHMDS_HUB_0304_02 del S */
+//     if(boot){
+// #ifdef USE_RESET_SIGNAL
+// #ifdef USE_REMAP_SIGNAL
+//         shub_gpio_set_value(SHUB_GPIO_PIN_BRMP, 1);  /* SHMDS_HUB_0110_01 mod */
+// #endif
+//         shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 0); /* SHMDS_HUB_0110_01 mod */
+//         usleep(SHUB_RESET_PLUSE_WIDTH * 1000);       /* SHMDS_HUB_0102_11 mod */
+//         shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 1); /* SHMDS_HUB_0110_01 mod */
+// #endif
+//         usleep(SHUB_RESET_TIME * 1000);              /* SHMDS_HUB_0102_11 mod */
+//     }else{
+//         ENABLE_IRQ;
+// 
+//         cmd.cmd.u16 = HC_MCU_FUP_START;
+//         cmd.prm.u8[0] = 0x55;
+//         cmd.prm.u8[1] = 0xAA;
+//         ret = shub_hostcmd(&cmd, &res, EXE_HOST_WAIT|EXE_HOST_ERR, 2);
+//         if(ret != SHUB_RC_OK) {
+//             DBG(DBG_LV_ERROR, "Communication Error!\n");
+//             ret = SHUB_RC_ERR;
+//             goto ERROR;
+//         }
+//         if(res.err.u16 == ERROR_FUP_CERTIFICATION) {
+//             DBG(DBG_LV_ERROR, "Certification Error!\n");
+//             ret = SHUB_RC_ERR;
+//             goto ERROR;
+//         }
+//         usleep(SHUB_RESET_TIME * 1000); /* SHMDS_HUB_0102_11 mod */
+//     } 
+//     reg = 0x04;
+//     hostif_write(CFG, &reg, sizeof(reg));
+// 
+//     hostif_read(INTREQ0, sreg.u8, 2);
+// 
+//     reg = 0x00;
+//     hostif_write(INTMASK0, &reg, sizeof(reg));
+//     hostif_write(INTMASK1, &reg, sizeof(reg));
+// 
+//     ENABLE_IRQ;
+/* SHMDS_HUB_0304_02 del E */
 
     DBG(DBG_LV_INFO, "Check Firmware Mode.\n");
     cmd.cmd.u16 = HC_MCU_GET_VERSION;
@@ -7554,7 +7834,7 @@ static int32_t shub_update_firmware(bool boot, uint8_t *arg_iDataPage1, uint8_t 
     cmd.cmd.u16 = HC_MCU_FUP_ERASE;
     cmd.prm.u8[0] = 0xAA;
     cmd.prm.u8[1] = 0x55;
-    ret = shub_hostcmd(&cmd, &res, EXE_HOST_WAIT|EXE_HOST_ERR, 2);
+    ret = shub_hostcmd(&cmd, &res, (EXE_HOST_WAIT | EXE_HOST_ERR | EXE_HOST_FUP_ERASE), 2);  /* SHMDS_HUB_0343_01 mod */
     if(ret != SHUB_RC_OK) {
         DBG(DBG_LV_ERROR, "Communication Error!\n");
         ret = SHUB_RC_ERR;
@@ -7660,7 +7940,7 @@ ERROR:
     return ret;
 }
 
-int32_t shub_update_fw(bool boot, uint8_t *arg_iDataPage1, uint8_t *arg_iDataPage2, uint32_t arg_iLen)
+int32_t shub_update_fw_exe(bool boot, uint8_t *arg_iDataPage1, uint8_t *arg_iDataPage2, uint32_t arg_iLen) /* SHMDS_HUB_0304_02 mod */
 {
     int32_t ret;
     int32_t i;
@@ -7708,6 +7988,21 @@ int32_t shub_update_fw(bool boot, uint8_t *arg_iDataPage1, uint8_t *arg_iDataPag
     return ret;
 }
 
+/* SHMDS_HUB_0304_02 add S */
+int32_t shub_update_fw(bool boot, uint8_t *arg_iDataPage1, uint8_t *arg_iDataPage2, uint32_t arg_iLen)
+{
+    int32_t ret;
+    
+    shub_access_flg |= SHUB_ACCESS_FW_UPDATE;
+    
+    ret = shub_update_fw_exe(boot, arg_iDataPage1, arg_iDataPage2, arg_iLen);
+    
+    shub_access_flg &= ~SHUB_ACCESS_FW_UPDATE;
+    
+    return ret;
+}
+/* SHMDS_HUB_0304_02 add E */
+
 static int32_t shub_check_access(void)
 {
     int32_t ret;
@@ -7730,8 +8025,8 @@ static int32_t shub_check_access(void)
 
 static int32_t shub_boot_fw_check(void)
 {
-    uint8_t reg = 0xFF;
-    Word    sreg;
+//  uint8_t reg = 0xFF; /* SHMDS_HUB_0304_02 del */
+//  Word    sreg;       /* SHMDS_HUB_0304_02 del */
     int32_t ret;
     HostCmd cmd;
     HostCmdRes res;
@@ -7743,32 +8038,36 @@ static int32_t shub_boot_fw_check(void)
         DBG(DBG_LV_ERROR, "FW Update or Recovery Now:%s\n", __FUNCTION__);
         return SHUB_RC_OK;
     }
-
-#ifdef USE_RESET_SIGNAL
-#ifdef USE_REMAP_SIGNAL
-    shub_gpio_set_value(SHUB_GPIO_PIN_BRMP, 1);  /* SHMDS_HUB_0110_01 mod */
-#endif
-    shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 0); /* SHMDS_HUB_0110_01 mod */
-    usleep(SHUB_RESET_PLUSE_WIDTH * 1000);       /* SHMDS_HUB_0102_11 mod */
-    shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 1); /* SHMDS_HUB_0110_01 mod */
-#endif
-    usleep(SHUB_RESET_TIME * 1000);              /* SHMDS_HUB_0102_11 mod */
-
-    reg = 0x04;
-    hostif_write(CFG, &reg, sizeof(reg));
-
-    hostif_read(INTREQ0, sreg.u8, 2);
-
-    reg = 0x00;
-    hostif_write(INTMASK0, &reg, sizeof(reg));
-    hostif_write(INTMASK1, &reg, sizeof(reg));
-
-    ENABLE_IRQ;
+    
+    shub_fw_reset(SHUB_FW_RESET_BOOT); /* SHMDS_HUB_0304_02 add */
+    
+/* SHMDS_HUB_0304_02 del S */
+// #ifdef USE_RESET_SIGNAL
+// #ifdef USE_REMAP_SIGNAL
+//     shub_gpio_set_value(SHUB_GPIO_PIN_BRMP, 1);  /* SHMDS_HUB_0110_01 mod */
+// #endif
+//     shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 0); /* SHMDS_HUB_0110_01 mod */
+//     usleep(SHUB_RESET_PLUSE_WIDTH * 1000);       /* SHMDS_HUB_0102_11 mod */
+//     shub_gpio_set_value(SHUB_GPIO_PIN_RESET, 1); /* SHMDS_HUB_0110_01 mod */
+// #endif
+//     usleep(SHUB_RESET_TIME * 1000);              /* SHMDS_HUB_0102_11 mod */
+// 
+//     reg = 0x04;
+//     hostif_write(CFG, &reg, sizeof(reg));
+// 
+//     hostif_read(INTREQ0, sreg.u8, 2);
+// 
+//     reg = 0x00;
+//     hostif_write(INTMASK0, &reg, sizeof(reg));
+//     hostif_write(INTMASK1, &reg, sizeof(reg));
+// 
+//     ENABLE_IRQ;
+/* SHMDS_HUB_0304_02 del E */
 
     // check boot version
     for(i=0; i<SHUB_CMD_RETRY_NUM; i++) {
         cmd.cmd.u16 = HC_MCU_GET_VERSION;
-        ret = shub_hostcmd(&cmd, &res, (EXE_HOST_ALL_RSLT | EXE_HOST_CK_CONNECT), 0); /* SHMDS_HUB_0316_01 mod */
+        ret = shub_hostcmd(&cmd, &res, (EXE_HOST_ALL_RSLT), 0); /* SHMDS_HUB_0316_01 mod */ /* SHMDS_HUB_0343_01 mod */
         if((SHUB_RC_OK != ret) || (0 != res.err.u16)) {
             DBG(DBG_LV_ERROR, "%s : FW Version Get Error(ret=%d, err=0x%x, cnt=%d)\n", __FUNCTION__, ret, res.err.u16, i);
             ret = SHUB_RC_ERR;
@@ -7796,6 +8095,13 @@ static int32_t shub_user_fw_check(void)
     int32_t ret = SHUB_RC_OK;
     HostCmd cmd;
     HostCmdRes res;
+    
+/* SHMDS_HUB_0304_02 add S */
+    ret = shub_fw_reset(SHUB_FW_RESET_USER);
+    if(ret != SHUB_RC_OK) {
+        return ret;
+    }
+/* SHMDS_HUB_0304_02 add S */
 
     if(atomic_read(&g_FWUpdateStatus)){
         DBG(DBG_LV_ERROR, "FW Update or Recovery Now:%s\n", __FUNCTION__);
@@ -7804,7 +8110,7 @@ static int32_t shub_user_fw_check(void)
     // check version
     for(i=0; i<SHUB_CMD_RETRY_NUM; i++) {
         cmd.cmd.u16 = HC_MCU_GET_VERSION;
-        ret = shub_hostcmd(&cmd, &res, (EXE_HOST_ALL | EXE_HOST_CK_CONNECT |EXE_HOST_EX_NO_RECOVER), 0);
+        ret = shub_hostcmd(&cmd, &res, (EXE_HOST_ALL | EXE_HOST_EX_NO_RECOVER), 0);  /* SHMDS_HUB_0343_01 mod */
         if((SHUB_RC_OK != ret) || (0 != res.err.u16)) {
             DBG(DBG_LV_ERROR, "%s : FW Version Get Error(ret=%d, err=0x%x, cnt=%d)\n", __FUNCTION__, ret, res.err.u16, i);
             ret = SHUB_RC_ERR;
@@ -9159,23 +9465,7 @@ int32_t shub_suspend( struct spi_device *client, pm_message_t mesg )
     SHUB_DBG_TIME_START    /* SHMDS_HUB_1801_01 add */
     suspendBatchingProc();
 #ifdef SHUB_SUSPEND
-    shub_suspend_acc();
-    shub_suspend_mag();
-    shub_suspend_mag_uncal();
-    shub_suspend_gyro();
-    shub_suspend_gyro_uncal();
-    shub_suspend_orien();
-    shub_suspend_grav();
-    shub_suspend_linear();
-    shub_suspend_rot();
-    shub_suspend_rot_gyro();
-    shub_suspend_rot_mag();
-    shub_suspend_exif();        // SHMDS_HUB_0203_01 add
-/* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add S */
-#ifdef CONFIG_BARO_SENSOR
-    shub_suspend_baro();
-#endif
-/* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add E */
+    shub_sensor_timer_stop(); /* SHMDS_HUB_3301_01 mod */
     s_is_suspend = true;
 #endif 
     cmd.cmd.u16 = HC_LOGGING_SET_NOTIFY;
@@ -9218,6 +9508,15 @@ ERROR:
     shub_dbg_clr_irq_log();
 /* SHMDS_HUB_0701_03 add S */
     shub_suspend_call_flg = false;     // SHMDS_HUB_0402_01 add
+
+/* SHMDS_HUB_0345_01 add S */
+    if(atomic_read(&g_bIsIntIrqEnable) == false) {
+        DBG(DBG_LV_INFO, "shub_suspend() : wake_lock\n");
+        shub_wake_lock_start(&shub_int_wake_lock);
+        shub_wake_lock_end(&shub_int_wake_lock);
+    }
+/* SHMDS_HUB_0345_01 add E */
+
     SHUB_DBG_TIME_END((SHUBIO<<8)+9999) /* SHMDS_HUB_1801_01 add */
     return ret;
 }
@@ -9235,6 +9534,7 @@ int32_t shub_resume( struct spi_device *client )
     int32_t ret;
     int32_t data[3]={0};
     int32_t iCurrentSensorEnable = atomic_read(&g_CurrentSensorEnable);
+    uint8_t reg = 0xFF;    /* SHMDS_HUB_0347_02 add */
 
     SHUB_DBG_TIME_START    /* SHMDS_HUB_1801_01 add */
 /* SHMDS_HUB_0401_01 add S */
@@ -9262,6 +9562,14 @@ int32_t shub_resume( struct spi_device *client )
 /* SHMDS_HUB_0120_01  SHMDS_HUB_0122_01 add E */
     s_is_suspend = false;
 #endif
+
+/* SHMDS_HUB_0347_02 add S */
+    /* dummy read */
+    ret = hostif_read(STATUS, &reg, sizeof(reg));
+    if(SHUB_RC_OK != ret){
+        DBG(DBG_LV_ERROR, "%s : dummy read Error!\n", __FUNCTION__);
+    }
+/* SHMDS_HUB_0347_02 add E */
 
     cmd.cmd.u16 = HC_LOGGING_SET_NOTIFY;
     cmd.prm.u8[0] = 1; // Enable
@@ -9338,12 +9646,14 @@ static int sensor_rep_show(struct seq_file *s, void *what)
     seq_printf(s, "gyro_filter=%d\n", s_micon_param.gyro_filter);
     seq_printf(s, "[ml630q790 ]g_bIsIntIrqEnable=%d\n",           atomic_read(&g_bIsIntIrqEnable));
 //  seq_printf(s, "[ml630q790 ]g_WakeupSensor=%x\n",              atomic_read(&g_WakeupSensor)); /* SHMDS_HUB_0701_08 mod */
-    seq_printf(s, "[ml630q790 ]g_FWUpdateStatus=%d\n",            atomic_read(&g_FWUpdateStatus));
+    seq_printf(s, "[ml630q790 ]g_FWUpdateStatus=%d, ",            atomic_read(&g_FWUpdateStatus));
+    seq_printf(s, "shub_access_flg=0x%x\n",                       shub_access_flg);     /* SHMDS_HUB_0304_02 add */
     seq_printf(s, "[ml630q790 ]LowPowerMode=%d, ",                shub_lowpower_mode);  /* SHMDS_HUB_0701_09 add */
     seq_printf(s, "OperationMode=%d\n",                           shub_operation_mode); /* SHMDS_HUB_0701_09 add */
     seq_printf(s, "[ml630q790 ]connect_flg=%d, ",                 shub_connect_flg);       /* SHMDS_HUB_0319_01 add */
     seq_printf(s, "fw_write_flg=%d, ",                            shub_fw_write_flg);      /* SHMDS_HUB_0319_01 add */
     seq_printf(s, "FailedInitParam=%d, ",                         shub_failed_init_param); /* SHMDS_HUB_0319_01 add */
+    seq_printf(s, "user_reset=%d, ",                              shub_reset_cnt);         /* SHMDS_HUB_0304_02 add */
     seq_printf(s, "err_cmd=0x%x, ",                               (shub_err_code >> 16) & 0xFFFF); /* SHMDS_HUB_0322_02 add */
     seq_printf(s, "err_code=0x%x\n",                              (shub_err_code & 0xFFFF));       /* SHMDS_HUB_0322_02 add */
 /* SHMDS_HUB_0701_11 mod E */
@@ -9356,7 +9666,8 @@ static int sensor_rep_show(struct seq_file *s, void *what)
     seq_printf(s, "gyro_uc=%d, ",      s_sensor_delay_us.gyro_uc);
     seq_printf(s, "baro=%d, ",         s_sensor_delay_us.baro);     /* SHMDS_HUB_0120_01 add */
     seq_printf(s, "orien=%d, ",        s_sensor_delay_us.orien);
-    seq_printf(s, "grav=%d, ",         s_sensor_delay_us.grav);
+    seq_printf(s, "grav=%d\n",         s_sensor_delay_us.grav);      /* SHMDS_HUB_0701_13 mod */
+    seq_printf(s, "[---       ]");                                   /* SHMDS_HUB_0701_13 add */
     seq_printf(s, "linear=%d, ",       s_sensor_delay_us.linear);
     seq_printf(s, "rot=%d, ",          s_sensor_delay_us.rot);
     seq_printf(s, "rot_gyro=%d, ",     s_sensor_delay_us.rot_gyro);
@@ -9374,7 +9685,8 @@ static int sensor_rep_show(struct seq_file *s, void *what)
     seq_printf(s, "gyro_uc=%d, ",      s_logging_delay_us.gyro_uc);
     seq_printf(s, "baro=%d, ",         s_logging_delay_us.baro);     /* SHMDS_HUB_0120_01 add */
     seq_printf(s, "orien=%d, ",        s_logging_delay_us.orien);
-    seq_printf(s, "grav=%d, ",         s_logging_delay_us.grav);
+    seq_printf(s, "grav=%d\n",         s_logging_delay_us.grav);     /* SHMDS_HUB_0701_13 mod */
+    seq_printf(s, "[---       ]");                                   /* SHMDS_HUB_0701_13 add */
     seq_printf(s, "linear=%d, ",       s_logging_delay_us.linear);
     seq_printf(s, "rot=%d, ",          s_logging_delay_us.rot);
     seq_printf(s, "rot_gyro=%d, ",     s_logging_delay_us.rot_gyro);
@@ -9393,7 +9705,8 @@ static int sensor_rep_show(struct seq_file *s, void *what)
     seq_printf(s, "baro=%lld, ",       shub_dbg_cnt_baro);    /* SHMDS_HUB_0120_01 add */
     seq_printf(s, "fusion=%lld, ",     shub_dbg_cnt_fusion);
     seq_printf(s, "cust=%lld, ",       shub_dbg_cnt_cust);
-    seq_printf(s, "other=%lld\n",      shub_dbg_cnt_other);
+    seq_printf(s, "other=%lld, ",      shub_dbg_cnt_other);
+    seq_printf(s, "none=%lld\n",       shub_dbg_cnt_none);    /* SHMDS_HUB_0704_01 add */
 
     seq_printf(s, "[ml630q790 ]shub_acc_offset ");
     seq_printf(s, "[0]=%d, ",          shub_acc_offset[0]);
@@ -9472,6 +9785,40 @@ static int sensor_rep_show(struct seq_file *s, void *what)
     seq_printf(s, "[ml630q790 ]LatestSTEP ");
     seq_printf(s, "S=%llu, ",          s_tLatestStepCountData.step);
     seq_printf(s, "OS=%llu\n",         s_tLatestStepCountData.stepOffset);
+
+/* SHMDS_HUB_0705_01 add S */
+    seq_printf(s, "[ml630q790 ]Suspend_RW ");
+    seq_printf(s, "write=%lld, ",      shub_dbg_host_wcnt);
+    seq_printf(s, "read=%lld\n",       shub_dbg_host_rcnt);
+/* SHMDS_HUB_0705_01 add E */
+
+/* SHMDS_HUB_0703_01 add S */
+    seq_printf(s, "[ml630q790 ]Cmd_Timeout_Err(1st)  ");
+    seq_printf(s, "cmd=0x%04x, ",      s_tTimeoutCmd[0]);
+    seq_printf(s, "IrqEnable=%d, ",    s_tTimeoutIrqEnable[0]);
+    shub_print_time(s, s_tTimeoutTimestamp[0]);                 /* SHMDS_HUB_0703_02 mod */
+    seq_printf(s, "\n");                                        /* SHMDS_HUB_0703_02 mod */
+
+    seq_printf(s, "[ml630q790 ]Cmd_Timeout_Err(Last) ");
+    seq_printf(s, "cmd=0x%04x, ",      s_tTimeoutCmd[1]);
+    seq_printf(s, "IrqEnable=%d, ",    s_tTimeoutIrqEnable[1]);
+    shub_print_time(s, s_tTimeoutTimestamp[1]);                 /* SHMDS_HUB_0703_02 mod */
+    seq_printf(s, ", cnt=%u\n",        s_tTimeoutErrCnt);       /* SHMDS_HUB_0703_02 mod */
+
+    seq_printf(s, "[ml630q790 ]Hosif_RW_Err(1st)  ");
+    seq_printf(s, "addr=0x%02x, ",     s_tRwErrAdr[0]);
+    seq_printf(s, "size=%d, ",         s_tRwErrSize[0]);
+    seq_printf(s, "ret=%d, ",          s_tRwErrCode[0]);        /* SHMDS_HUB_0703_03 mod */
+    shub_print_time(s, s_tRwErrTimestamp[0]);                   /* SHMDS_HUB_0703_02 mod */
+    seq_printf(s, "\n");                                        /* SHMDS_HUB_0703_02 mod */
+
+    seq_printf(s, "[ml630q790 ]Hosif_RW_Err(Last) ");
+    seq_printf(s, "addr=0x%02x, ",     s_tRwErrAdr[1]);
+    seq_printf(s, "size=%d, ",         s_tRwErrSize[1]);
+    seq_printf(s, "ret=%d, ",          s_tRwErrCode[1]);        /* SHMDS_HUB_0703_03 mod */
+    shub_print_time(s, s_tRwErrTimestamp[1]);                   /* SHMDS_HUB_0703_02 mod */
+    seq_printf(s, ", cnt=%u\n",          s_tRwErrCnt);          /* SHMDS_HUB_0703_02 mod */
+/* SHMDS_HUB_0703_01 add E */
 
     shub_sensor_rep_input_exif(s);
     shub_sensor_rep_input_acc(s);

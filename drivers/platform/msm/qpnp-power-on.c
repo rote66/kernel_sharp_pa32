@@ -298,6 +298,25 @@ static const char * const qpnp_poff_reason[] = {
 static int warm_boot;
 module_param(warm_boot, int, 0);
 
+#ifdef CONFIG_BATTERY_SH
+/*
+ * On the kernel command line specify
+ * ps_hold_for_ramdump=1 to indicate a warm
+ * reset of the device for ramdump mode.
+ */
+static int ps_hold_for_ramdump;
+module_param(ps_hold_for_ramdump, int, 0);
+
+static int __init ps_hold_for_ramdump_setup(char *str)
+{
+	get_option(&str, &ps_hold_for_ramdump);
+
+	return 1;
+}
+
+__setup("ps_hold_for_ramdump=", ps_hold_for_ramdump_setup);
+#endif /* CONFIG_BATTERY_SH */
+
 static int
 qpnp_pon_masked_write(struct qpnp_pon *pon, u16 addr, u8 mask, u8 val)
 {
@@ -1944,6 +1963,44 @@ static int read_gen2_pon_off_reason(struct qpnp_pon *pon, u16 *reason,
 	return 0;
 }
 
+#ifdef CONFIG_BATTERY_SH
+#define PON_PS_HOLD_RESET_CTL	0x85A
+#define PMIC_MASTER_DEVICE_ID	0
+#define PMIC_SLAVE_DEVICE_ID	2
+#define PMIC_WARM_RESET         0x1
+#define PMIC_DVDD_HARD_RESET	0x8
+#define PMIC_XVDD_SHUTDOWN	0x6
+static int sh_qpnp_ps_hold_config(struct qpnp_pon *pon)
+{
+	int rc = 0;
+	u8 reg;
+
+	if(ps_hold_for_ramdump == 1) {
+		if(PMIC_MASTER_DEVICE_ID == pon->spmi->sid) {
+			reg = PMIC_WARM_RESET;
+			rc = spmi_ext_register_writel(pon->spmi->ctrl, pon->spmi->sid,
+							PON_PS_HOLD_RESET_CTL, &reg, 1);
+		} else if(PMIC_SLAVE_DEVICE_ID == pon->spmi->sid) {
+			reg = PMIC_WARM_RESET;
+			rc = spmi_ext_register_writel(pon->spmi->ctrl, pon->spmi->sid,
+							PON_PS_HOLD_RESET_CTL, &reg, 1);
+		}
+	} else {
+		if(PMIC_MASTER_DEVICE_ID == pon->spmi->sid) {
+			reg = PMIC_DVDD_HARD_RESET;
+			rc = spmi_ext_register_writel(pon->spmi->ctrl, pon->spmi->sid,
+							PON_PS_HOLD_RESET_CTL, &reg, 1);
+		} else if(PMIC_SLAVE_DEVICE_ID == pon->spmi->sid) {
+			reg = PMIC_XVDD_SHUTDOWN;
+			rc = spmi_ext_register_writel(pon->spmi->ctrl, pon->spmi->sid,
+							PON_PS_HOLD_RESET_CTL, &reg, 1);
+		}
+	}
+
+	return rc;
+}
+#endif /* CONFIG_BATTERY_SH */
+
 static int qpnp_pon_probe(struct spmi_device *spmi)
 {
 	struct qpnp_pon *pon;
@@ -2201,6 +2258,14 @@ static int qpnp_pon_probe(struct spmi_device *spmi)
 		return rc;
 	}
 
+#ifdef CONFIG_BATTERY_SH
+	rc = sh_qpnp_ps_hold_config(pon);
+	if (rc) {
+		dev_err(&spmi->dev,"Unable to config ps hold reset type rc: %d\n", rc);
+		return rc;
+	}
+#endif /* CONFIG_BATTERY_SH */
+
 	rc = of_property_read_u32(pon->spmi->dev.of_node,
 				"qcom,pon-dbc-delay", &delay);
 	if (rc) {
@@ -2266,6 +2331,15 @@ static int qpnp_pon_probe(struct spmi_device *spmi)
 		dev_err(&spmi->dev, "sys file creation failed rc: %d\n",
 			rc);
 		return rc;
+	}
+
+	if (of_property_read_bool(spmi->dev.of_node,
+					"qcom,pon-reset-off")) {
+		rc = qpnp_pon_trigger_config(PON_CBLPWR_N, false);
+		if (rc) {
+			dev_err(&spmi->dev, "failed update the PON_CBLPWR %d\n",
+				rc);
+		}
 	}
 
 	if (of_property_read_bool(spmi->dev.of_node,

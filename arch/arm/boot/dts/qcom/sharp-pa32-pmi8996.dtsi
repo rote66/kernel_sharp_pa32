@@ -92,13 +92,13 @@
 };
 
 /{
-	sharp_dl90_batterydata: qcom,battery-data {
-		#include "batterydata-sharp-dl90.dtsi"
+	sharp_pa32_batterydata: qcom,battery-data {
+		#include "batterydata-sharp-pa32.dtsi"
 	};
 };
 /*****************************************/
 /*  pmi8994_fg                           */
 /*****************************************/
 &pmi8994_fg {
-	qcom,battery-data = <&sharp_dl90_batterydata>;
+	qcom,battery-data = <&sharp_pa32_batterydata>;
 };

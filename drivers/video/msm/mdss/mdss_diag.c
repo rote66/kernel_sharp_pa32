@@ -84,8 +84,8 @@ extern int mdss_shdisp_host_dsi_tx(int commit,
 		struct shdisp_dsi_cmd_desc *shdisp_cmds, int size);
 extern int mdss_shdisp_host_dsi_rx(struct shdisp_dsi_cmd_desc *cmds,
 		unsigned char *rx_data, int rx_size);
-extern int mdss_dsi_phy_calc_timing_param(struct mdss_panel_info *pinfo, u32 phy_rev, u32 frate_hz);
 extern void mdss_dsi_hs_clk_lane_enable(bool enable);
+extern void mdss_dsi_8996_phy_timing_config(struct mdss_dsi_ctrl_pdata *ctrl);
 
 /* ----------------------------------------------------------------------- */
 /*                                                                         */
@@ -872,15 +872,6 @@ static int __mdss_diag_mipi_clkchg_panel_clk_data(struct mdss_panel_data *pdata)
 	pr_debug("%s: pclk_rate = %d byte_clk_rate = %d ctrl_pdata=0x%p DSI_%d\n", __func__
 	, ctrl_pdata->pclk_rate, ctrl_pdata->byte_clk_rate, ctrl_pdata, ctrl_pdata->ndx);
 
-	ret = mdss_dsi_phy_calc_timing_param(pinfo,
-		ctrl_pdata->shared_data->phy_rev,
-		pinfo->mipi.frame_rate);
-
-	if (ret) {
-		pr_err("Error in calculating phy timings\n");
-		return ret;
-	}
-
 	pr_debug("%s: end ret(%d)\n", __func__, ret);
 
 	return ret;
@@ -935,6 +926,7 @@ static int mdss_diag_reconfig(struct mdss_panel_data *pdata)
 	mdss_dsi_clk_ctrl(ctrl_pdata, ctrl_pdata->dsi_clk_handle,
 			  MDSS_DSI_ALL_CLKS, MDSS_DSI_CLK_ON);
 	mdss_dsi_sw_reset(ctrl_pdata, true);
+	mdss_dsi_8996_phy_timing_config(ctrl_pdata);
 	mdss_dsi_ctrl_setup(ctrl_pdata);
 	mdss_dsi_controller_cfg(true, pdata);
 	mdss_dsi_clk_ctrl(ctrl_pdata, ctrl_pdata->dsi_clk_handle,

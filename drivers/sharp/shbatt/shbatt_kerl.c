@@ -2173,16 +2173,7 @@ static int shbatt_drv_probe(
 		SHBATT_ERROR("%s : create device failed.\n",__FUNCTION__);
 		return -EPERM;
 	}
-
-/*
- * If this is not comment out, the debugboard can
- * not boot normally. This is seems related
- * to share memeory
- */
-	if (0) {
-
 	shbatt_task_is_initialized = true;
-	}
 
 #ifdef CONFIG_PM_SUPPORT_BATT_TRACEABILITY
 	shbatt_api_write_traceability();

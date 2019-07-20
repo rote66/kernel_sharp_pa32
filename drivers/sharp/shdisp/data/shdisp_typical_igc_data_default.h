@@ -1,4 +1,4 @@
-/* core/sharp/shdisp/src/data/shdisp_typical_igc_data_default.h  (Display Driver)
+/* drivers/sharp/shdisp/data/shdisp_typical_igc_data_default.h  (Display Driver)
  *
  * Copyright (C) 2016 SHARP CORPORATION
  *

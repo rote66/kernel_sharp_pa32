@@ -223,6 +223,11 @@ struct shdisp_illumi_triple_color {
     int count;
 };
 
+struct shdisp_lut_info {
+    unsigned short status;
+    struct shdisp_gc_lut lut;
+};
+
 /* ------------------------------------------------------------------------- */
 /* IOCTL                                                                     */
 /* ------------------------------------------------------------------------- */
@@ -259,6 +264,7 @@ struct shdisp_illumi_triple_color {
 #define SHDISP_IOCTL_SET_LED_AUTO_LOW_MODE              _IOW  (SHDISP_IOC_MAGIC, 46, struct shdisp_led_auto_low_mode_param)
 #define SHDISP_IOCTL_SET_TRV_PARAM                      _IOW  (SHDISP_IOC_MAGIC, 47, struct shdisp_trv_param)
 #define SHDISP_IOCTL_SET_ILLUMI_TRI_COLOR               _IOW  (SHDISP_IOC_MAGIC, 48, struct shdisp_illumi_triple_color)
+#define SHDISP_IOCTL_GET_LUT_INFO                       _IOR  (SHDISP_IOC_MAGIC, 49, struct shdisp_lut_info)
 
 #endif /* SHDISP_IOCTL_H */
 

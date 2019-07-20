@@ -167,7 +167,7 @@ int32_t init_spi(void)
     int32_t ret;
     ret = spi_register_driver(&interface_driver);
     if(ret != 0){
-        printk("can't regist spi driver \n");
+        printk("[shub] can't regist spi driver ret=%d\n", ret);
     }
     return ret;
 }
@@ -181,7 +181,7 @@ int32_t hostif_write_proc(uint8_t adr, const uint8_t *data, uint16_t size)
     uint8_t send_data[512+128];
 
     if((data == NULL) || (size == 0)){
-        printk("SPI write input error(data %p, size %x)\n", data, size);
+        printk("[shub] SPI write input error(data=%p, size=%d)\n", data, size);
         return -1;
     }
 
@@ -195,7 +195,7 @@ int32_t hostif_write_proc(uint8_t adr, const uint8_t *data, uint16_t size)
 #ifndef SHUB_SW_PINCTRL
     ret = spi_setup(client_mcu);
     if(ret < 0) {
-        printk("init SPI failed. ret=%x\n", ret);
+        printk("[shub] init SPI failed. ret=%d\n", ret);
         return ret;
     }
 #endif
@@ -210,7 +210,7 @@ int32_t hostif_write_proc(uint8_t adr, const uint8_t *data, uint16_t size)
 
     ret = spi_sync(client_mcu, &message);
     if(ret < 0){
-        printk("SPI write error(ret %x, adr %x, size %x)", ret, adr, size);
+        printk("[shub] SPI write error(ret=%d, adr=0x%02x, size=%d)\n", ret, adr, size);
     }   
 
     return ret;
@@ -221,44 +221,63 @@ int32_t hostif_read_proc(uint8_t adr, uint8_t *data, uint16_t size)
 {
     int32_t ret = 0;
     struct spi_message  message;
-    struct spi_transfer transfer[2];
+/* SHMDS_HUB_0347_01 mod S */
+    struct spi_transfer transfer[1];
+    int i;
+    uint16_t r_len = size;
+    uint8_t *txbuf_p;
+    uint8_t *rxbuf_p;
+    uint8_t r_buff[FIFO_SIZE+2]; // maxbuff + addr + null
 
     if( (data == NULL) || (size == 0)){
-        printk("SPI read input error(data %p, size %x)", data, size);
+        printk("[shub] SPI read input error(data=%p, size=%d)\n", data, size);
         return -1;
     }
 
+    if(r_len > FIFO_SIZE){
+        printk("[shub] SPI read size error(size=%d)\n", size);
+        r_len = FIFO_SIZE;
+    }
+
+    memset(&r_buff[0], 0, sizeof(r_buff));
     memset(&transfer, 0, sizeof(transfer));
 
     adr |= SSIO_MASK_READ;
+    r_buff[0] = adr;
+    txbuf_p = &r_buff[0];
+    rxbuf_p = &r_buff[1];
+/* SHMDS_HUB_0347_01 mod E */
 
 /* SHMDS_HUB_0110_02 del S */
 #ifndef SHUB_SW_PINCTRL
     ret = spi_setup(client_mcu);
     if(ret < 0){
-        printk("init SPI failed. ret=%x\n", ret);
+        printk("[shub] init SPI failed. ret=%d\n", ret);
         return ret;
     }
 #endif
 /* SHMDS_HUB_0110_02 del E */
     spi_message_init(&message);
 
-    transfer[0].tx_buf = &adr;
-    transfer[0].rx_buf = NULL;
-    transfer[0].len    = 1;
+/* SHMDS_HUB_0347_01 mod S */
+    transfer[0].tx_buf = txbuf_p;
+    transfer[0].rx_buf = rxbuf_p;
+    transfer[0].len    = r_len + 1;
     transfer[0].speed_hz = 2*1000*1000; // SHMDS_HUB_0104_10 add
     spi_message_add_tail(&transfer[0], &message);
-
-    transfer[1].tx_buf = NULL;
-    transfer[1].rx_buf = (void *)data;
-    transfer[1].len    = size;
-    transfer[1].speed_hz = 2*1000*1000; // SHMDS_HUB_0104_10 add
-    spi_message_add_tail(&transfer[1], &message);
+/* SHMDS_HUB_0347_01 mod E */
 
     ret = spi_sync(client_mcu, &message);
     if(ret < 0){
-        printk("read error(ret %x, adr %x, size %x)", ret, adr, size);
+        printk("[shub] read error(ret=%d, adr=0x%02x, size=%d)\n", ret, adr, (r_len+1));
     }
+
+/* SHMDS_HUB_0347_01 add S */
+    rxbuf_p += 1;
+    for(i = 0;i < r_len;i++){
+        *data++ = *rxbuf_p++;
+    }
+/* SHMDS_HUB_0347_01 add E */
 
     return ret;
 }

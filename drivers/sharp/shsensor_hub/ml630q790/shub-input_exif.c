@@ -1395,7 +1395,7 @@ int shub_set_default_ped_parameter(void)
         printk( "[shub]%s get TOTAL_STATUS_DETECTION error. ret=%d\n", __func__, ret);
         return ret;
     }
-    param.m_iParam[1] = 0x37a;  // SHMDS_HUB_0204_23 mod (0->0x37a)
+    param.m_iParam[1] = 0;      // SHMDS_HUB_0204_23 SHMDS_HUB_0206_08 mod (0->0x37a->0)
     param.m_iParam[2] = 21;     // SHMDS_HUB_0204_23 add
     param.m_iParam[3] = 21;     // SHMDS_HUB_0204_23 add
     param.m_iParam[4] = 2;

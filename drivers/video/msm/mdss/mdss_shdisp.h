@@ -27,6 +27,10 @@ struct mdss_dsi_ctrl_pdata;
 
 extern void mdss_shdisp_lock_recovery(void);
 extern void mdss_shdisp_unlock_recovery(void);
+extern void mdss_shdisp_lock_display(void);
+extern void mdss_shdisp_unlock_display(void);
+extern void mdss_shdisp_lock_blank(void);
+extern void mdss_shdisp_unlock_blank(void);
 
 extern bool mdss_shdisp_get_disp_status(void);
 

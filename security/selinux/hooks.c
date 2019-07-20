@@ -1245,6 +1245,8 @@ static inline u16 socket_type_to_security_class(int family, int type, int protoc
 		return SECCLASS_KEY_SOCKET;
 	case PF_APPLETALK:
 		return SECCLASS_APPLETALK_SOCKET;
+	case PF_CAN:
+		return SECCLASS_CAN_SOCKET;
 	}
 
 	return SECCLASS_SOCKET;
@@ -3017,7 +3019,8 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
 			ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_TIMES_SET))
 		return dentry_has_perm(cred, dentry, FILE__SETATTR);
 
-	if (selinux_policycap_openperm && (ia_valid & ATTR_SIZE))
+	if (selinux_policycap_openperm && (ia_valid & ATTR_SIZE)
+			&& !(ia_valid & ATTR_FILE))
 		av |= FILE__OPEN;
 
 	return dentry_has_perm(cred, dentry, av);
@@ -3330,6 +3333,8 @@ int ioctl_has_perm(const struct cred *cred, struct file *file,
 	struct lsm_ioctlop_audit ioctl;
 	u32 ssid = cred_sid(cred);
 	int rc;
+	u8 driver = cmd >> 8;
+	u8 xperm = cmd & 0xff;
 
 	ad.type = LSM_AUDIT_DATA_IOCTL_OP;
 	ad.u.op = &ioctl;
@@ -3348,8 +3353,8 @@ int ioctl_has_perm(const struct cred *cred, struct file *file,
 	if (unlikely(IS_PRIVATE(inode)))
 		return 0;
 
-	rc = avc_has_operation(ssid, isec->sid, isec->sclass,
-			requested, cmd, &ad);
+	rc = avc_has_extended_perms(ssid, isec->sid, isec->sclass,
+			requested, driver, xperm, &ad);
 out:
 	return rc;
 }
@@ -3762,6 +3767,40 @@ static int selinux_kernel_module_request(char *kmod_name)
 	return avc_has_perm(sid, SECINITSID_KERNEL, SECCLASS_SYSTEM,
 			    SYSTEM__MODULE_REQUEST, &ad);
 }
+
+#ifndef CONFIG_SECURITY_MIYABI
+static int selinux_kernel_module_from_file(struct file *file)
+{
+	struct common_audit_data ad;
+	struct inode_security_struct *isec;
+	struct file_security_struct *fsec;
+	struct inode *inode;
+	u32 sid = current_sid();
+	int rc;
+
+	/* init_module */
+	if (file == NULL)
+		return avc_has_perm(sid, sid, SECCLASS_SYSTEM,
+					SYSTEM__MODULE_LOAD, NULL);
+
+	/* finit_module */
+	ad.type = LSM_AUDIT_DATA_PATH;
+	ad.u.path = file->f_path;
+
+	inode = file_inode(file);
+	isec = inode->i_security;
+	fsec = file->f_security;
+
+	if (sid != fsec->sid) {
+		rc = avc_has_perm(sid, fsec->sid, SECCLASS_FD, FD__USE, &ad);
+		if (rc)
+			return rc;
+	}
+
+	return avc_has_perm(sid, isec->sid, SECCLASS_SYSTEM,
+				SYSTEM__MODULE_LOAD, &ad);
+}
+#endif
 
 static int selinux_task_setpgid(struct task_struct *p, pid_t pgid)
 {
@@ -6142,6 +6181,8 @@ static struct security_operations selinux_ops = {
 #ifdef CONFIG_SECURITY_MIYABI
 	.kernel_module_from_file =	cap_kernel_module_from_file,
 	.task_fix_setuid = 		miyabi_task_fix_setuid,
+#else
+	.kernel_module_from_file =      selinux_kernel_module_from_file,
 #endif
 	.task_setpgid =			selinux_task_setpgid,
 	.task_getpgid =			selinux_task_getpgid,

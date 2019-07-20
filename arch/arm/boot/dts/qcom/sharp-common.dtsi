@@ -61,7 +61,7 @@
 		shrlog_region: shrlog_region@91500000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x91500000 0 0x100000>;
+			reg = <0 0x91700000 0 0x100000>;
 			label = "shrlog_region";
 		};
 	};

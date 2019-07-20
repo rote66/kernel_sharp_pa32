@@ -79,7 +79,8 @@ static int mdss_shdisp_first_display_done = 0;
 #endif /* CONFIG_USES_SHLCDC */
 static int mdss_shdisp_video_transfer_ctrl_no_commit(struct msm_fb_data_type *mfd, int onoff);
 
-static struct semaphore mdss_shdisp_recovery_sem;
+static struct semaphore mdss_shdisp_blank_sem;
+static struct semaphore mdss_shdisp_disp_sem;
 static struct semaphore mdss_shdisp_host_dsi_cmd_sem;
 static struct semaphore mdss_shdisp_atomic_commit_sem;
 
@@ -122,7 +123,8 @@ extern int mdss_mdp_cmd_flush_delayed_off_clk_work(struct mdss_mdp_ctl *pctl);
 /* ----------------------------------------------------------------------- */
 void mdss_shdisp_lock_recovery(void)
 {
-	down(&mdss_shdisp_recovery_sem);
+	down(&mdss_shdisp_blank_sem);
+	down(&mdss_shdisp_disp_sem);
 }
 
 /* ----------------------------------------------------------------------- */
@@ -130,7 +132,40 @@ void mdss_shdisp_lock_recovery(void)
 /* ----------------------------------------------------------------------- */
 void mdss_shdisp_unlock_recovery(void)
 {
-	up(&mdss_shdisp_recovery_sem);
+	up(&mdss_shdisp_disp_sem);
+	up(&mdss_shdisp_blank_sem);
+}
+
+/* ----------------------------------------------------------------------- */
+/*                                                                         */
+/* ----------------------------------------------------------------------- */
+void mdss_shdisp_lock_display(void)
+{
+	down(&mdss_shdisp_disp_sem);
+}
+
+/* ----------------------------------------------------------------------- */
+/*                                                                         */
+/* ----------------------------------------------------------------------- */
+void mdss_shdisp_unlock_display(void)
+{
+	up(&mdss_shdisp_disp_sem);
+}
+
+/* ----------------------------------------------------------------------- */
+/*                                                                         */
+/* ----------------------------------------------------------------------- */
+void mdss_shdisp_lock_blank(void)
+{
+	down(&mdss_shdisp_blank_sem);
+}
+
+/* ----------------------------------------------------------------------- */
+/*                                                                         */
+/* ----------------------------------------------------------------------- */
+void mdss_shdisp_unlock_blank(void)
+{
+	up(&mdss_shdisp_blank_sem);
 }
 
 /* ----------------------------------------------------------------------- */
@@ -1361,7 +1396,8 @@ struct shdisp_igc_lut *mdss_shdisp_api_get_igc_lut(void)
 /* ----------------------------------------------------------------------- */
 static int __init mdss_shdisp_init(void)
 {
-	sema_init(&mdss_shdisp_recovery_sem, 1);
+	sema_init(&mdss_shdisp_disp_sem, 1);
+	sema_init(&mdss_shdisp_blank_sem, 1);
 	sema_init(&mdss_shdisp_host_dsi_cmd_sem, 1);
 	sema_init(&mdss_shdisp_atomic_commit_sem, 1);
 	init_waitqueue_head(&mdss_shdisp_atomic_seq_wait_q);

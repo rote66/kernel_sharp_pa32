@@ -25,6 +25,9 @@
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/mount.h>
+#ifndef CONFIG_SHSYS_CUST
+#include <linux/file.h>
+#endif /* CONFIG_SHSYS_CUST */
 #include "ecryptfs_kernel.h"
 
 struct ecryptfs_open_req {
@@ -147,7 +150,11 @@ int ecryptfs_privileged_open(struct file **lower_file,
 	flags |= IS_RDONLY(lower_dentry->d_inode) ? O_RDONLY : O_RDWR;
 	(*lower_file) = dentry_open(&req.path, flags, cred);
 	if (!IS_ERR(*lower_file))
+#ifdef CONFIG_SHSYS_CUST
 		goto out;
+#else  /* CONFIG_SHSYS_CUST */
+		goto have_file;
+#endif /* CONFIG_SHSYS_CUST */
 	if ((flags & O_ACCMODE) == O_RDONLY) {
 		rc = PTR_ERR((*lower_file));
 		goto out;
@@ -165,8 +172,21 @@ int ecryptfs_privileged_open(struct file **lower_file,
 	mutex_unlock(&ecryptfs_kthread_ctl.mux);
 	wake_up(&ecryptfs_kthread_ctl.wait);
 	wait_for_completion(&req.done);
+#ifdef CONFIG_SHSYS_CUST
 	if (IS_ERR(*lower_file))
 		rc = PTR_ERR(*lower_file);
+#else  /* CONFIG_SHSYS_CUST */
+	if (IS_ERR(*lower_file)) {
+		rc = PTR_ERR(*lower_file);
+		goto out;
+	}
+have_file:
+	if ((*lower_file)->f_op->mmap == NULL) {
+		fput(*lower_file);
+		*lower_file = NULL;
+		rc = -EMEDIUMTYPE;
+	}
+#endif /* CONFIG_SHSYS_CUST */
 out:
 	return rc;
 }

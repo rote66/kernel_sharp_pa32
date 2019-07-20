@@ -469,11 +469,10 @@ struct mm_struct {
 	bool tlb_flush_pending;
 #endif
 	struct uprobes_state uprobes_state;
-#ifdef CONFIG_SHSYS_CUST
 #ifdef CONFIG_MSM_APP_SETTINGS
 	int app_setting;
 #endif
-#endif	//CONFIG_SHSYS_CUST
+
 };
 
 static inline void mm_init_cpumask(struct mm_struct *mm)

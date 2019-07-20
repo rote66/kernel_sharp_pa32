@@ -764,10 +764,8 @@ static int devfreq_bw_hwmon_ev_handler(struct devfreq *df,
 {
 	int ret;
 	unsigned int sample_ms;
-#ifdef CONFIG_SHSYS_CUST
 	struct hwmon_node *node;
 	struct bw_hwmon *hw;
-#endif /* CONFIG_SHSYS_CUST */
 
 	switch (event) {
 	case DEVFREQ_GOV_START:
@@ -794,7 +792,6 @@ static int devfreq_bw_hwmon_ev_handler(struct devfreq *df,
 		sample_ms = *(unsigned int *)data;
 		sample_ms = max(MIN_MS, sample_ms);
 		sample_ms = min(MAX_MS, sample_ms);
-#ifdef CONFIG_SHSYS_CUST
 		/*
 		 * Suspend/resume the HW monitor around the interval update
 		 * to prevent the HW monitor IRQ from trying to change
@@ -804,16 +801,13 @@ static int devfreq_bw_hwmon_ev_handler(struct devfreq *df,
 		node = df->data;
 		hw = node->hw;
 		hw->suspend_hwmon(hw);
-#endif /* CONFIG_SHSYS_CUST */
 		devfreq_interval_update(df, &sample_ms);
-#ifdef CONFIG_SHSYS_CUST
 		ret = hw->resume_hwmon(hw);
 		if (ret) {
 			dev_err(df->dev.parent,
 				"Unable to resume HW monitor (%d)\n", ret);
 			return ret;
 		}
-#endif /* CONFIG_SHSYS_CUST */
 		break;
 
 	case DEVFREQ_GOV_SUSPEND:

@@ -65,11 +65,9 @@ struct fuse_file *fuse_file_alloc(struct fuse_conn *fc)
 		return NULL;
 
 	ff->rw_lower_file = NULL;
-#ifdef CONFIG_SHSYS_CUST
 	ff->shortcircuit_enabled = 0;
 	if (fc->shortcircuit_io)
 		ff->shortcircuit_enabled = 1;
-#endif	//CONFIG_SHSYS_CUST
 	ff->fc = fc;
 	ff->reserved_req = fuse_request_alloc(0);
 	if (unlikely(!ff->reserved_req)) {
@@ -1006,11 +1004,7 @@ static ssize_t fuse_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 			return err;
 	}
 
-#ifndef CONFIG_SHSYS_CUST
-	if (ff && ff->rw_lower_file)
-#else	// not CONFIG_SHSYS_CUST
 	if (ff && ff->shortcircuit_enabled && ff->rw_lower_file)
-#endif	// not CONFIG_SHSYS_CUST
 		ret_val = fuse_shortcircuit_read_iter(iocb, to);
 	else
 		ret_val = generic_file_read_iter(iocb, to);
@@ -1152,6 +1146,7 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
 		tmp = iov_iter_copy_from_user_atomic(page, ii, offset, bytes);
 		flush_dcache_page(page);
 
+		iov_iter_advance(ii, tmp);
 		if (!tmp) {
 			unlock_page(page);
 			page_cache_release(page);
@@ -1164,7 +1159,6 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
 		req->page_descs[req->num_pages].length = tmp;
 		req->num_pages++;
 
-		iov_iter_advance(ii, tmp);
 		count += tmp;
 		pos += tmp;
 		offset += tmp;
@@ -1287,11 +1281,7 @@ static ssize_t fuse_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	if (err)
 		goto out;
 
-#ifndef CONFIG_SHSYS_CUST
-	if (ff && ff->rw_lower_file) {
-#else	// not CONFIG_SHSYS_CUST
 	if (ff && ff->shortcircuit_enabled && ff->rw_lower_file) {
-#endif	// not CONFIG_SHSYS_CUST
 		written = fuse_shortcircuit_write_iter(iocb, from);
 		goto out;
 	}
@@ -2186,11 +2176,9 @@ static const struct vm_operations_struct fuse_file_vm_ops = {
 
 static int fuse_file_mmap(struct file *file, struct vm_area_struct *vma)
 {
-#ifdef CONFIG_SHSYS_CUST
 	struct fuse_file *ff = file->private_data;
 
 	ff->shortcircuit_enabled = 0;
-#endif	//CONFIG_SHSYS_CUST
 	if ((vma->vm_flags & VM_SHARED) && (vma->vm_flags & VM_MAYWRITE))
 		fuse_link_write_file(file);
 
@@ -2201,11 +2189,9 @@ static int fuse_file_mmap(struct file *file, struct vm_area_struct *vma)
 
 static int fuse_direct_mmap(struct file *file, struct vm_area_struct *vma)
 {
-#ifdef CONFIG_SHSYS_CUST
 	struct fuse_file *ff = file->private_data;
 
 	ff->shortcircuit_enabled = 0;
-#endif	//CONFIG_SHSYS_CUST
 
 	/* Can't provide the coherency needed for MAP_SHARED */
 	if (vma->vm_flags & VM_MAYSHARE)

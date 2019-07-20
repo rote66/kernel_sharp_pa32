@@ -84,17 +84,9 @@ extern void fpsimd_load_partial_state(struct fpsimd_partial_state *state);
 #ifdef CONFIG_ENABLE_FP_SIMD_SETTINGS
 extern void fpsimd_disable_trap(void);
 extern void fpsimd_enable_trap(void);
-#ifndef CONFIG_SHSYS_CUST
-extern void fpsimd_settings_disable(void);
-extern void fpsimd_settings_enable(void);
-#endif	//not CONFIG_SHSYS_CUST
 #else
 static inline void fpsimd_disable_trap(void) {}
 static inline void fpsimd_enable_trap(void) {}
-#ifndef CONFIG_SHSYS_CUST
-static inline void fpsimd_settings_disable(void) {}
-static inline void fpsimd_settings_enable(void) {}
-#endif	//not CONFIG_SHSYS_CUST
 #endif
 
 #endif

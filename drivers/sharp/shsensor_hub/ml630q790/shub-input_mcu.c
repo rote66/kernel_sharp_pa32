@@ -132,7 +132,8 @@ static long shub_ioctl(struct file *filp, unsigned int cmd, unsigned long arg, i
                 DBG_MCU_IO("ioctl(cmd = Initialize)\n"); // SHMDS_HUB_0701_01 add
                 mutex_lock(&shub_lock);
                 shub_set_exif_md_mode_flg(0);           /* SHMDS_HUB_0211_01 add */
-                shub_initialize();
+//              shub_initialize();                      /* SHMDS_HUB_0304_02 del */
+                shub_user_reset();                      /* SHMDS_HUB_0304_02 add */
                 mutex_unlock(&shub_lock);
             }
             break;

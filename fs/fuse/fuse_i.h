@@ -160,9 +160,7 @@ struct fuse_file {
 
 	/* the read write file */
 	struct file *rw_lower_file;
-#ifdef CONFIG_SHSYS_CUST
 	bool shortcircuit_enabled;
-#endif	//CONFIG_SHSYS_CUST
 };
 
 /** One input argument of a request */

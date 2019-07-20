@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1886,8 +1886,6 @@ static int msm_spi_setup(struct spi_device *spi)
 	u32              spi_config;
 	u32              mask;
 
-	SPIDB_INFO("start\n");
-
 	if (spi->bits_per_word < 4 || spi->bits_per_word > 32) {
 		dev_err(&spi->dev, "%s: invalid bits_per_word %d\n",
 			__func__, spi->bits_per_word);
@@ -1900,6 +1898,8 @@ static int msm_spi_setup(struct spi_device *spi)
 	}
 
 	dd = spi_master_get_devdata(spi->master);
+
+	SPIDB_INFO("start\n");
 
 	rc = pm_runtime_get_sync(dd->dev);
 	if (rc < 0 && !dd->is_init_complete &&
@@ -1974,15 +1974,15 @@ err_setup_exit:
 
 static int debugfs_iomem_x32_set(void *data, u64 val)
 {
-	struct msm_spi_regs *debugfs_spi_regs = (struct msm_spi_regs *)data;
-	struct msm_spi *dd = debugfs_spi_regs->dd;
+	struct msm_spi_debugfs_data *reg = (struct msm_spi_debugfs_data *)data;
+	struct msm_spi *dd = reg->dd;
 	int ret;
 
 	ret = pm_runtime_get_sync(dd->dev);
 	if (ret < 0)
 		return ret;
 
-	writel_relaxed(val, (dd->base + debugfs_spi_regs->offset));
+	writel_relaxed(val, (dd->base + reg->offset));
 	/* Ensure the previous write completed. */
 	mb();
 
@@ -1993,14 +1993,14 @@ static int debugfs_iomem_x32_set(void *data, u64 val)
 
 static int debugfs_iomem_x32_get(void *data, u64 *val)
 {
-	struct msm_spi_regs *debugfs_spi_regs = (struct msm_spi_regs *)data;
-	struct msm_spi *dd = debugfs_spi_regs->dd;
+	struct msm_spi_debugfs_data *reg = (struct msm_spi_debugfs_data *)data;
+	struct msm_spi *dd = reg->dd;
 	int ret;
 
 	ret = pm_runtime_get_sync(dd->dev);
 	if (ret < 0)
 		return ret;
-	*val = readl_relaxed(dd->base + debugfs_spi_regs->offset);
+	*val = readl_relaxed(dd->base + reg->offset);
 	/* Ensure the previous read completed. */
 	mb();
 
@@ -2014,18 +2014,21 @@ DEFINE_SIMPLE_ATTRIBUTE(fops_iomem_x32, debugfs_iomem_x32_get,
 
 static void spi_debugfs_init(struct msm_spi *dd)
 {
-	dd->dent_spi = debugfs_create_dir(dev_name(dd->dev), NULL);
+	char dir_name[20];
+
+	scnprintf(dir_name, sizeof(dir_name), "%s_dbg", dev_name(dd->dev));
+	dd->dent_spi = debugfs_create_dir(dir_name, NULL);
 	if (dd->dent_spi) {
 		int i;
 
 		for (i = 0; i < ARRAY_SIZE(debugfs_spi_regs); i++) {
-			debugfs_spi_regs[i].dd = dd;
+			dd->reg_data[i].offset = debugfs_spi_regs[i].offset;
+			dd->reg_data[i].dd = dd;
 			dd->debugfs_spi_regs[i] =
 			   debugfs_create_file(
 			       debugfs_spi_regs[i].name,
 			       debugfs_spi_regs[i].mode,
-			       dd->dent_spi,
-			       debugfs_spi_regs+i,
+			       dd->dent_spi, &dd->reg_data[i],
 			       &fops_iomem_x32);
 		}
 	}

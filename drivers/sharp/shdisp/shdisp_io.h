@@ -1,4 +1,4 @@
-/* drivers/sharp/shdisp/shdisp_system.h  (Display Driver)
+/* drivers/sharp/shdisp/shdisp_io.h  (Display Driver)
  *
  * Copyright (C) 2015 SHARP CORPORATION
  *

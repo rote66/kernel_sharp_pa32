@@ -220,43 +220,32 @@
 		pinctrl-1 = <&prox_int_suspend>;
 	};
 
-	flip_switch {
-		compatible = "flip_switch";
-		qcom,flip-det-gpio  = <&tlmm 122 0x00>;
-		interrupt-parent  = <&tlmm>;
-		interrupts = <122 0>;
-		interrupt-names = "flip_det";
-		pinctrl-names = "flip_det_active","flip_det_suspend";
-		pinctrl-0 = <&flip_det_active>;
-		pinctrl-1 = <&flip_det_suspend>;
-	};
-
 /* SH_USB_DRIVER add-> */ /*2015-11-10*/
 	qusb@7411000 {
 		qcom,qusb-phy-init-seq = <0xB8 0x80
-				   0x11 0x84
-				   0x83 0x88
-				   0xC7 0x8C
-				   0x30 0x08
-				   0x79 0x0C
-				   0x21 0x10
-				   0x14 0x9C
-				   0x80 0x04
-				   0x9F 0x1C
-				   0x00 0x18>;
+					0x11 0x84
+					0x83 0x88
+					0xC7 0x8C
+					0x30 0x08
+					0x79 0x0C
+					0x21 0x10
+					0x14 0x9C
+					0x80 0x04
+					0x9F 0x1C
+					0x00 0x18>;
 	};
 	qusb@7412000 {
 		qcom,qusb-phy-init-seq = <0xB8 0x80
-				   0x11 0x84
-				   0x83 0x88
-				   0xC7 0x8C
-				   0x30 0x08
-				   0x79 0x0C
-				   0x21 0x10
-				   0x14 0x9C
-				   0x80 0x04
-				   0x9F 0x1C
-				   0x00 0x18>;
+					0x11 0x84
+					0x83 0x88
+					0xC7 0x8C
+					0x30 0x08
+					0x79 0x0C
+					0x21 0x10
+					0x14 0x9C
+					0x80 0x04
+					0x9F 0x1C
+					0x00 0x18>;
 	};
 /* SH_USB_DRIVER add end-> */ /*2015-11-10*/
 
@@ -289,6 +278,17 @@
 /* SH_AUDIO_DRIVER <- */ /*21-009*/
 	};
 /* SH_AUDIO_DRIVER <- */ /*21-001*/
+
+	flip_switch {
+		compatible = "flip_switch";
+		qcom,flip-det-gpio  = <&tlmm 122 0x00>;
+		interrupt-parent  = <&tlmm>;
+		interrupts = <122 0>;
+		interrupt-names = "flip_det";
+		pinctrl-names = "flip_det_active","flip_det_suspend";
+		pinctrl-0 = <&flip_det_active>;
+		pinctrl-1 = <&flip_det_suspend>;
+	};
 
 	tunctrl {
 		compatible = "tunctrl";

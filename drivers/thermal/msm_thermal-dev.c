@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -114,10 +114,8 @@ static long msm_thermal_process_freq_table_req(struct msm_thermal_ioctl *query,
 	uint32_t table_idx, idx = 0, cluster_id = query->clock_freq.cluster_num;
 	struct clock_plan_arg *clock_freq = &(query->clock_freq);
 
-#ifdef CONFIG_SHSYS_CUST
 	if (cluster_id >= num_possible_cpus())
 		return -EINVAL;
-#endif
 
 	if (!freq_table_len[cluster_id]) {
 		ret = msm_thermal_get_freq_plan_size(cluster_id,
@@ -205,10 +203,8 @@ static long msm_thermal_process_voltage_table_req(
 	uint32_t cluster_id = query->voltage.cluster_num;
 	struct voltage_plan_arg *voltage = &(query->voltage);
 
-#ifdef CONFIG_SHSYS_CUST
 	if (cluster_id >= num_possible_cpus())
 		return -EINVAL;
-#endif
 
 	if (!voltage_table_ptr[cluster_id]) {
 		if (!freq_table_len[cluster_id]) {

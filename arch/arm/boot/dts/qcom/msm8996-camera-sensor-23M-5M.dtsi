@@ -495,6 +495,7 @@
 		clocks = <&clock_mmss clk_mclk0_clk_src>,
 				<&clock_mmss clk_camss_mclk0_clk>;
 		clock-names = "cam_src_clk", "cam_clk";
+		qcom,clock-rates = <0 0>;
 	};
 
 	qcom,camera@20 {
@@ -534,5 +535,6 @@
 		clocks = <&clock_mmss clk_mclk2_clk_src>,
 			<&clock_mmss clk_camss_mclk2_clk>;
 		clock-names = "cam_src_clk", "cam_clk";
+		qcom,clock-rates = <0 0>;
 	};
 };

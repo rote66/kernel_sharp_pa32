@@ -178,6 +178,7 @@ out:
 	return rc;
 }
 
+#ifdef CONFIG_SHSYS_CUST
 static int ecryptfs_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct file *lower_file = ecryptfs_file_to_lower(file);
@@ -190,6 +191,7 @@ static int ecryptfs_mmap(struct file *file, struct vm_area_struct *vma)
 		return -ENODEV;
 	return generic_file_mmap(file, vma);
 }
+#endif /* CONFIG_SHSYS_CUST */
 
 /**
  * ecryptfs_open
@@ -304,23 +306,10 @@ static int ecryptfs_flush(struct file *file, fl_owner_t td)
 
 static int ecryptfs_release(struct inode *inode, struct file *file)
 {
-#ifndef CONFIG_SHSYS_CUST
-	int ret;
-	ret = vfs_fsync(file, false);
-
-	if (ret)
-		pr_err("failed to sync file ret = %d.\n", ret);
-#endif	// not CONFIG_SHSYS_CUST
 	ecryptfs_put_lower_file(inode);
 	kmem_cache_free(ecryptfs_file_info_cache,
 			ecryptfs_file_to_private(file));
 
-#ifndef CONFIG_SHSYS_CUST
-	clean_inode_pages(inode->i_mapping, 0, -1);
-	clean_inode_pages(ecryptfs_inode_to_lower(inode)->i_mapping, 0, -1);
-	truncate_inode_pages(inode->i_mapping, 0);
-	truncate_inode_pages(ecryptfs_inode_to_lower(inode)->i_mapping, 0);
-#endif	// not CONFIG_SHSYS_CUST
 	return 0;
 }
 
@@ -424,7 +413,11 @@ const struct file_operations ecryptfs_main_fops = {
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = ecryptfs_compat_ioctl,
 #endif
+#ifdef CONFIG_SHSYS_CUST
 	.mmap = ecryptfs_mmap,
+#else  /* CONFIG_SHSYS_CUST */
+	.mmap = generic_file_mmap,
+#endif /* CONFIG_SHSYS_CUST */
 	.open = ecryptfs_open,
 	.flush = ecryptfs_flush,
 	.release = ecryptfs_release,

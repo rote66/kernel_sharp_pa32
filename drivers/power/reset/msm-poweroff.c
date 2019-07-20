@@ -47,7 +47,7 @@
 
 
 static int restart_mode;
-static void *restart_reason, *dload_type_addr;
+static void *restart_reason;
 static bool scm_pmic_arbiter_disable_supported;
 static bool scm_deassert_ps_hold_supported;
 /* Download mode master kill-switch */
@@ -55,16 +55,19 @@ static void __iomem *msm_ps_hold;
 static phys_addr_t tcsr_boot_misc_detect;
 static void scm_disable_sdi(void);
 
+#ifdef CONFIG_MSM_DLOAD_MODE
 /* Runtime could be only changed value once.
- * There is no API from TZ to re-enable the registers.
- * So the SDI cannot be re-enabled when it already by-passed.
+* There is no API from TZ to re-enable the registers.
+* So the SDI cannot be re-enabled when it already by-passed.
 */
 #ifdef CONFIG_SHLOG_SYSTEM
 static int download_mode = 0;
 #else /* CONFIG_SHLOG_SYSTEM */
 static int download_mode = 1;
 #endif /* CONFIG_SHLOG_SYSTEM */
-static struct kobject dload_kobj;
+#else
+static const int download_mode;
+#endif
 
 #ifdef CONFIG_SH_SHUTDOWN_FAILSAFE
 static void android_shutdown_work(struct work_struct *work);
@@ -93,6 +96,8 @@ static void *dload_mode_addr;
 static bool dload_mode_enabled;
 static void *emergency_dload_mode_addr;
 static bool scm_dload_supported;
+static struct kobject dload_kobj;
+static void *dload_type_addr;
 
 static int dload_set(const char *val, struct kernel_param *kp);
 /* interface for exporting attributes */
@@ -160,9 +165,6 @@ static void set_dload_mode(int on)
 	ret = scm_set_dload_mode(on ? SCM_DLOAD_MODE : 0, 0);
 	if (ret)
 		pr_err("Failed to set secure DLOAD mode: %d\n", ret);
-
-	if (!on)
-		scm_disable_sdi();
 
 	dload_mode_enabled = on;
 }
@@ -244,7 +246,7 @@ static int dload_set(const char *val, struct kernel_param *kp)
 #else
 static void set_dload_mode(int on)
 {
-	scm_disable_sdi();
+	return;
 }
 
 #ifdef CONFIG_SHBOOT_CUST
@@ -478,6 +480,7 @@ static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
 		msm_trigger_wdog_bite();
 #endif
 
+	scm_disable_sdi();
 	halt_spmi_pmic_arbiter();
 	deassert_ps_hold();
 
@@ -489,6 +492,7 @@ static void do_msm_poweroff(void)
 	pr_notice("Powering off the SoC\n");
 
 	set_dload_mode(0);
+	scm_disable_sdi();
 
 #ifdef CONFIG_SHLOG_SYSTEM
 	qpnp_pon_set_restart_reason(PON_RESTART_REASON_UNKNOWN);
@@ -505,6 +509,7 @@ static void do_msm_poweroff(void)
 	return;
 }
 
+#ifdef CONFIG_MSM_DLOAD_MODE
 static ssize_t attr_show(struct kobject *kobj, struct attribute *attr,
 				char *buf)
 {
@@ -611,6 +616,7 @@ static struct attribute *reset_attrs[] = {
 static struct attribute_group reset_attr_group = {
 	.attrs = reset_attrs,
 };
+#endif
 
 #ifdef CONFIG_SH_SHUTDOWN_FAILSAFE
 static void android_shutdown_work(struct work_struct *work)
@@ -697,6 +703,7 @@ static int msm_restart_probe(struct platform_device *pdev)
 				"qcom,msm-imem-dload-type");
 	if (!np) {
 		pr_err("unable to find DT imem dload-type node\n");
+		goto skip_sysfs_create;
 	} else {
 		dload_type_addr = of_iomap(np, 0);
 		if (!dload_type_addr) {
@@ -710,6 +717,7 @@ static int msm_restart_probe(struct platform_device *pdev)
 	if (ret) {
 		pr_err("%s:Error in creation kobject_add\n", __func__);
 		kobject_put(&dload_kobj);
+		goto skip_sysfs_create;
 	}
 
 	ret = sysfs_create_group(&dload_kobj, &reset_attr_group);
@@ -757,6 +765,8 @@ skip_sysfs_create:
 		scm_deassert_ps_hold_supported = true;
 
 	set_dload_mode(download_mode);
+	if (!download_mode)
+		scm_disable_sdi();
 
 	return 0;
 
