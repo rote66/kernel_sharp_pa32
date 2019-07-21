@@ -302,6 +302,7 @@ struct smbchg_chip {
 	struct delayed_work		hvdcp_det_work;
 #ifdef CONFIG_BATTERY_SH
 	struct delayed_work		usb_present_check_work;
+	struct delayed_work		usb_gnd_impedance_check_work;
 #endif /* CONFIG_BATTERY_SH*/
 	spinlock_t			sec_access_lock;
 	struct mutex			therm_lvl_lock;
@@ -322,6 +323,9 @@ struct smbchg_chip {
 	bool				skip_usb_notification;
 	u32				vchg_adc_channel;
 	struct qpnp_vadc_chip		*vchg_vadc_dev;
+#ifdef CONFIG_BATTERY_SH
+	u32				vchg_vol_adc_channel;
+#endif /* CONFIG_BATTERY_SH*/
 
 	/* voters */
 	struct votable			*fcc_votable;
@@ -404,6 +408,7 @@ enum wake_reason {
 #define	SHUTDOWN_WORKAROUND_ICL_VOTER "SHUTDOWN_WORKAROUND_ICL_VOTER"
 #define	PARALLEL_ICL_VOTER	"PARALLEL_ICL_VOTER"
 #ifdef CONFIG_BATTERY_SH
+#define USB_GND_IMPEDANCE_ICL_VOTER "USB_GND_IMPEDANCE_ICL_VOTER"
 #define	SH_WEAK_CHARGER_ICL_VOTER	"SH_WEAK_CHARGER_ICL_VOTER"
 #endif /* CONFIG_BATTERY_SH */
 
@@ -540,7 +545,7 @@ module_param_named(
 	int, S_IRUSR | S_IWUSR
 );
 #ifdef CONFIG_BATTERY_SH
-static int smbchg_default_hvdcp_icl_ma = 1400;
+static int smbchg_default_hvdcp_icl_ma = 1200;
 #else
 static int smbchg_default_hvdcp_icl_ma = 1800;
 #endif /* CONFIG_BATTERY_SH */
@@ -3557,6 +3562,14 @@ static int set_usb_current_limit_vote_cb(struct votable *votable,
 			!strcmp(effective_client, PARALLEL_ICL_VOTER)))
 		return 0;
 
+#ifdef CONFIG_BATTERY_SH
+	if (effective_client && (!strcmp(effective_client, USB_GND_IMPEDANCE_ICL_VOTER)))
+		return 0;
+
+	if (get_client_vote_locked(chip->usb_icl_votable, USB_GND_IMPEDANCE_ICL_VOTER) == icl_ma)
+		return 0;
+#endif /* CONFIG_BATTERY_SH */
+
 	aicl_ma = smbchg_get_aicl_level_ma(chip);
 #ifndef CONFIG_BATTERY_SH
 	if (icl_ma > aicl_ma)
@@ -5654,6 +5667,7 @@ static bool is_usbin_uv_high(struct smbchg_chip *chip)
 #define HVDCP_NOTIFY_MS		2500
 #ifdef CONFIG_BATTERY_SH
 #define USE_REGISTER_FOR_CURRENT	BIT(2)
+#define USB_GND_INPEDANCE_CHECK_INSERT_DELAY_MS 10000
 #endif /* CONFIG_BATTERY_SH */
 static void handle_usb_insertion(struct smbchg_chip *chip)
 {
@@ -5696,6 +5710,9 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 		"inserted type = %d (%s)", usb_supply_type, usb_type_name);
 
 #ifdef CONFIG_BATTERY_SH
+	pr_smb(PR_MISC, "Enable AICL in insertion\n");
+	smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG, AICL_EN_BIT, AICL_EN_BIT);
+	
 	if(usb_supply_type == POWER_SUPPLY_TYPE_USB) {
 		sh_rerun_apsd(chip);
 		read_usb_type(chip, &usb_type_name, &usb_supply_type);
@@ -5759,6 +5776,10 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 	not_full_display_flg = false;
 	wake_lock(&chip->batt_charge_wake_lock);
 	wake_lock_timeout(&smb_timeout_wake_lock, 1 * HZ);
+
+	cancel_delayed_work_sync(&chip->usb_gnd_impedance_check_work);
+	schedule_delayed_work(&chip->usb_gnd_impedance_check_work,
+		msecs_to_jiffies(USB_GND_INPEDANCE_CHECK_INSERT_DELAY_MS));
 #endif /* CONFIG_BATTERY_SH */
 }
 
@@ -6776,7 +6797,7 @@ static int smbchg_get_iusb(struct smbchg_chip *chip)
 
 #ifdef CONFIG_BATTERY_SH
 #define USB_DCP_CURRENT_LIMIT 1500
-#define USB_HVDCP_CURRENT_LIMIT 1400
+#define USB_HVDCP_CURRENT_LIMIT 1200
 #endif/* CONFIG_BATTERY_SH */
 static void smbchg_external_power_changed(struct power_supply *psy)
 {
@@ -6865,8 +6886,8 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 				msecs_to_jiffies(HVDCP_NOTIFY_MS));
 	}
 
-	if (usb_supply_type != POWER_SUPPLY_TYPE_USB)
 #ifndef CONFIG_BATTERY_SH
+	if (usb_supply_type != POWER_SUPPLY_TYPE_USB)
 		goto  skip_current_for_non_sdp;
 #endif /* CONFIG_BATTERY_SH */
 
@@ -8930,6 +8951,9 @@ static int smb_parse_dt(struct smbchg_chip *chip)
 		}
 	}
 
+	OF_PROP_READ(chip, chip->vchg_vol_adc_channel,
+		"vchg-vol-adc-channel-id", rc, 1);
+
 	chip->thermal_limit_voltage = SH_HVDCP_9V;
 	chip->dtv_limit_voltage = SH_HVDCP_9V;
 #endif /* CONFIG_BATTERY_SH */
@@ -9563,7 +9587,6 @@ static void smbchg_vbus_osc_wa_return_check_work(struct work_struct *work)
 }
 #endif /* CONFIG_BATTERY_SH */
 
-
 static int smbchg_check_chg_version(struct smbchg_chip *chip)
 {
 	struct pmic_revid_data *pmic_rev_id;
@@ -9782,6 +9805,133 @@ static void smbchg_usb_present_check_work(struct work_struct *work)
 	}
 }
 
+
+#define HVDCP_9V_VCHG_HIGH_THRESH	8550000
+#define HVDCP_9V_VCHG_LOW_THRESH	8350000
+#define HIGH_IMPEDANCE_CURRENT_LIMIT	500
+#define USBIN_HVDCP_SEL_5V_BIT		BIT(0)
+#define SCHG_LITE_USBIN_HVDCP_SEL_5V_BIT		BIT(1)
+#define USB_GND_INPEDANCE_CHECK_DELAY_MS	2000
+static void smbchg_usb_gnd_impedance_check_work(struct work_struct *work)
+{
+	struct smbchg_chip *chip = container_of(work,
+				struct smbchg_chip,
+				usb_gnd_impedance_check_work.work);
+	int rc;
+	struct qpnp_vadc_result adc_result;
+	int ichg_ua, vchg_uv, icl_sts;
+	u8 reg;
+
+	pr_smb(PR_MISC, "Check start.\n");
+
+	if(chip->usb_supply_type == POWER_SUPPLY_TYPE_USB_HVDCP)
+	{
+		/* Get HVDCP Type */
+		rc = smbchg_read(chip, &reg, chip->usb_chgpth_base + USBIN_HVDCP_STS, 1);
+		if(rc < 0){
+			pr_err("Could not read USBIN_HVDCP_STS: %d\n", rc);
+			goto reschedule;
+		}
+		pr_smb(PR_MISC, "USBIN_HVDCP_STS=0x%x\n", reg);
+
+		if((reg & USBIN_HVDCP_SEL_BIT) && (reg & USBIN_HVDCP_SEL_9V_BIT))
+			pr_smb(PR_MISC, "USBIN_HVDCP_STS is 9V\n");
+		else if((reg & USBIN_HVDCP_SEL_BIT) && (reg & USBIN_HVDCP_SEL_5V_BIT))
+		{
+			pr_smb(PR_MISC, "USBIN_HVDCP_STS is 5V\n");
+			goto reschedule;
+		}
+		else{
+			pr_err("USBIN_HVDCP_STS is not 9V and 5V\n");
+			goto reschedule;
+		}
+
+		pr_smb(PR_MISC, "Disable AICL\n");
+		rc = smbchg_sec_masked_write(chip, chip->usb_chgpth_base + USB_AICL_CFG, AICL_EN_BIT, 0);
+		if(rc < 0){
+			pr_err("Could not write USB_AICL_CFG: %d\n", rc);
+			goto reschedule;
+		}
+
+		pr_smb(PR_MISC, "Check VBUS voltage/current, charger type:%d\n", chip->usb_supply_type);
+		/* Get VBUS Voltage/Current */
+		rc = qpnp_vadc_read(chip->vadc_dev,
+				chip->vchg_vol_adc_channel, &adc_result);
+		if(rc < 0){
+			pr_err("Could not read VCHG (channel-%d): %d, skip to next check\n", chip->vchg_vol_adc_channel, rc);
+			goto reschedule;
+		}
+		vchg_uv = adc_result.physical;
+		ichg_ua = smbchg_get_iusb(chip);
+		pr_smb(PR_MISC, "Vchg=%d, Ichg=%d\n", vchg_uv, ichg_ua);
+
+		/* Get ICL status */
+		rc = smbchg_read(chip, &reg, chip->usb_chgpth_base + ICL_STS_1_REG, 1);
+		if(rc < 0){
+			pr_err("Could not read ICL_STS_1_REG: %d\n", rc);
+			goto reschedule;
+		}
+		reg &= ICL_STS_MASK;
+		if(reg >= chip->tables.usb_ilim_ma_len)	{
+			pr_err("Invalid AICL value: 0x%02x\n", reg);
+			goto reschedule;
+		}
+		icl_sts = reg;
+
+		if(vchg_uv < HVDCP_9V_VCHG_LOW_THRESH)
+		{
+			pr_smb(PR_MISC, "HVDCP 9V and VCHG:%d < %d\n", vchg_uv, HVDCP_9V_VCHG_LOW_THRESH);
+			pr_smb(PR_MISC, "Current ICL STATUS=%d, Target ICL=%d\n",chip->tables.usb_ilim_ma_table[icl_sts], HIGH_IMPEDANCE_CURRENT_LIMIT);
+			if(chip->tables.usb_ilim_ma_table[icl_sts] > HIGH_IMPEDANCE_CURRENT_LIMIT)
+			{
+				pr_smb(PR_MISC, "Decrease ICL to %d\n", chip->tables.usb_ilim_ma_table[icl_sts-1]);
+				rc = vote(chip->usb_icl_votable, USB_GND_IMPEDANCE_ICL_VOTER, true, chip->tables.usb_ilim_ma_table[icl_sts-1]);
+				if(rc < 0){
+					pr_err("Couldn't vote for USB ICL rc=%d\n", rc);
+					goto reschedule;
+				}
+			}
+			else
+				pr_smb(PR_MISC, "Nothing to vote.\n");
+		}
+		else if(vchg_uv > HVDCP_9V_VCHG_HIGH_THRESH)
+		{
+			pr_smb(PR_MISC, "HVDCP 9V and VCHG:%d > %d\n", vchg_uv, HVDCP_9V_VCHG_HIGH_THRESH);
+			pr_smb(PR_MISC, "Current ICL STATUS=%d, Target ICL=%d\n",chip->tables.usb_ilim_ma_table[icl_sts], smbchg_default_hvdcp_icl_ma);
+			if(chip->tables.usb_ilim_ma_table[icl_sts] < smbchg_default_hvdcp_icl_ma)
+			{
+				pr_smb(PR_MISC, "Increase ICL to %d\n", chip->tables.usb_ilim_ma_table[icl_sts+1]);
+				rc = vote(chip->usb_icl_votable, USB_GND_IMPEDANCE_ICL_VOTER, true, chip->tables.usb_ilim_ma_table[icl_sts+1]);
+				if(rc < 0){
+					pr_err("Couldn't vote for USB ICL rc=%d\n", rc);
+					goto reschedule;
+				}
+			}
+			else
+				pr_smb(PR_MISC, "Nothing to vote.\n");
+		}
+		else
+			pr_smb(PR_MISC, "Skip to next check, HVDCP 9V and VCHG:%d\n", vchg_uv);
+	}
+	else if(chip->usb_supply_type == POWER_SUPPLY_TYPE_UNKNOWN)
+	{
+		pr_smb(PR_MISC, "Check end, charger type:%d\n", chip->usb_supply_type);
+		rc = vote(chip->usb_icl_votable, USB_GND_IMPEDANCE_ICL_VOTER, false, 0);
+		if(rc < 0)
+			pr_err("Couldn't vote for USB ICL rc=%d\n", rc);
+		
+		return;
+	}
+	else
+		pr_smb(PR_MISC, "Skip to next check, charger type:%d\n", chip->usb_supply_type);
+
+reschedule:
+	pr_smb(PR_MISC, "Reschedule.\n");
+	schedule_delayed_work(&chip->usb_gnd_impedance_check_work,
+		msecs_to_jiffies(USB_GND_INPEDANCE_CHECK_DELAY_MS));
+	return;
+}
+
 #define AICL_WL_SEL_6MS	0x03
 #define AICL_INITIAL_0	0x00
 #define AICL_ADC_DIS	0x00
@@ -9943,6 +10093,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 		smbchg_vbus_osc_wa_return_check_work);
 #ifdef CONFIG_BATTERY_SH
 	INIT_DELAYED_WORK(&chip->usb_present_check_work, smbchg_usb_present_check_work);
+	INIT_DELAYED_WORK(&chip->usb_gnd_impedance_check_work, smbchg_usb_gnd_impedance_check_work);
 #endif /* CONFIG_BATTERY_SH */
 	init_completion(&chip->src_det_lowered);
 	init_completion(&chip->src_det_raised);

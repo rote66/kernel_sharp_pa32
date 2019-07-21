@@ -263,6 +263,7 @@ pmi8994_charger: qcom,qpnp-smbcharger {
 			 qcom,thermal-mitigation-hvdcp-vol = <9 9 9 9 9 9 9 9 9 9 9 5 5 5 5 5 5>;
 			 qcom,vchg_sns-vadc = <&pm8994_vadc>;
 			 qcom,vchg-adc-channel-id = <38>;
+			 qcom,vchg-vol-adc-channel-id = <0>;
 		 };
 	};
 	qcom,pmi8994@3 {

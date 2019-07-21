@@ -1,0 +1,325 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "sharp_pinctrl/sharp-pinctrl-dl90.dtsi"
+#include "sharp-dl90-shdisp.dtsi"
+
+/ {
+};
+
+&soc {
+	/*****************************************/
+	/*  BLSP1                                */
+	/*****************************************/
+	/*---------------------*/
+	/* BLSP1 QUP0(BLSP#1)  */
+	/*---------------------*/
+	spi@7575000 {
+		status = "ok";
+		shgrip_dev@0 {
+			status = "ok";
+			compatible = "sharp,shgrip_dev";
+			reg = <0>;
+			spi-max-frequency = <400000>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <117 0>;
+			sharp,spi-cs   = <&tlmm 2 0x00>;
+			sharp,com-req  = <&tlmm 29 0x00>;
+			sharp,com-rdy  = <&tlmm 40 0x00>;
+			sharp,irq-int  = <&tlmm 117 0x00>;
+			sharp,grip-pu  = <&pm8994_gpios 10 0>;
+			sharp,irq-rst  = <&pm8994_gpios 12 0>;
+			pinctrl-names = "grip_comreq_active","grip_comreq_suspend",
+							"grip_comrdy_active","grip_comrdy_suspend",
+							"grip_int_active","grip_int_suspend",
+							"grip_spi_active","grip_spi_suspend",
+							"grip_spi_cs_active","grip_spi_cs_suspend";
+			pinctrl-0 = <&grip_comreq_active>;
+			pinctrl-1 = <&grip_comreq_suspend>;
+			pinctrl-2 = <&grip_comrdy_active>;
+			pinctrl-3 = <&grip_comrdy_suspend>;
+			pinctrl-4 = <&grip_int_active>;
+			pinctrl-5 = <&grip_int_suspend>;
+			pinctrl-6 = <&spi_1_active>;
+			pinctrl-7 = <&spi_1_sleep>;
+			pinctrl-8 = <&grip_spi_cs_active>;
+			pinctrl-9 = <&grip_spi_cs_suspend>;
+			spi-cpol;
+			spi-cpha;
+		};
+	};
+
+	/*---------------------*/
+	/* BLSP1 UART1(BLSP#2) */
+	/*---------------------*/
+	uart@07570000 {
+		status = "ok";
+	};
+
+	/*---------------------*/
+	/* BLSP1 UART2(BLSP#3)  */
+	/*---------------------*/
+	uart@07571000 {
+		/*status = "ok";*/
+		status = "disabled";
+	};
+
+	/*---------------------*/
+	/* BLSP#4              */
+	/*---------------------*/
+
+	/*---------------------*/
+	/* BLSP#5              */
+	/*---------------------*/
+
+	/*---------------------*/
+	/* BLSP1 QUP5(BLSP#6)  */
+	/*---------------------*/
+	i2c@757A000 {
+		status = "ok";
+	};
+
+	/*---------------------*/
+	/* BLSP2 QUP0(BLSP#7)  */
+	/*---------------------*/
+	i2c@75B5000 {
+		status = "ok";
+/* SH_AUDIO_DRIVER -> */ /*21-002*/
+        shsmartamp@34 {
+            status = "ok";
+            compatible = "sharp,shsmartamp_i2c";
+            sharp,shsmartamp-en-gpio = <&pmi8994_gpios 2 0>;
+            reg = <0x34>;
+        };
+/* SH_AUDIO_DRIVER <- */ /*21-002*/
+	};
+
+	/*---------------------*/
+	/* BLSP2 QUP1(BLSP#8)  */
+	/*---------------------*/
+	i2c@75B6000 {
+		status = "ok";
+
+		nfc_i2c_drv@55 {
+			status = "ok";
+			compatible = "sharp,nfc_i2c_drv";
+			reg = <0x55>;
+
+			sharp,nfc-nint-gpio = <&tlmm 9 0x00>;
+			pinctrl-names = "nfc_nint_active","nfc_nint_suspend";
+			pinctrl-0 = <&nfc_nint_active>;
+			pinctrl-1 = <&nfc_nint_suspend>;
+		};
+
+	};
+
+	/*---------------------*/
+	/* BLSP#8              */
+	/*---------------------*/
+
+	/*---------------------*/
+	/* BLSP2 QUP2(BLSP#9)  */
+	/*---------------------*/
+	spi@75B7000 {
+		status = "ok";
+	};
+
+	/*---------------------*/
+	/* BLSP#10             */
+	/*---------------------*/
+
+	/*---------------------*/
+	/* BLSP2 QUP4(BLSP#11) */
+	/*---------------------*/
+	spi@75B9000 {
+		status = "ok";
+		sensorhub@0 {
+			status = "ok";
+			compatible = "sharp,sensorhub";
+			reg = <0>;
+			spi-max-frequency = <2000000>;
+			spi-cpol;
+			spi-cpha;
+			qcom,shub-gpio-reset = <&tlmm 80 0>;
+			qcom,shub-gpio-brmp = <&tlmm 124 0>;
+			qcom,shub-gpio-int0 = <&tlmm 119 0>;
+			pinctrl-names = "shub_reset_active","shub_reset_suspend",
+							"shub_int0_active","shub_int0_suspend",
+							"shub_int0_pullup","shub_int0_pulldown",
+							"shub_brmp_active","shub_brmp_suspend";
+			pinctrl-0 = <&shub_reset_active>;
+			pinctrl-1 = <&shub_reset_suspend>;
+			pinctrl-2 = <&shub_int0_active>;
+			pinctrl-3 = <&shub_int0_suspend>;
+			pinctrl-4 = <&shub_int0_pullup>;
+			pinctrl-5 = <&shub_int0_pulldown>;
+			pinctrl-6 = <&shub_brmp_active>;
+			pinctrl-7 = <&shub_brmp_suspend>;
+			shub,shub_acc_axis_val = <1>;
+			shub,shub_gyro_axis_val = <1>;
+			shub,shub_mag_axis_val = <1>;
+		};
+	};
+
+	/*---------------------*/
+	/* BLSP2 QUP5(BLSP#12) */
+	/*---------------------*/
+	spi@75BA000 {
+		status = "ok";
+		shtps_rmi@0 {
+			status = "ok";
+			compatible = "sharp,shtps_rmi";
+			reg = <0>;
+			spi-max-frequency = <400000>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <125 0>;
+			spi-cpol;
+			spi-cpha;
+
+			/* user defined property */
+			shtps_rmi,rst_pin = <&tlmm 21 0>;
+			shtps_rmi,vdd_3_0V = <&pm8994_l21>;
+			shtps_rmi,tpin = <&tlmm 38 0>;
+		};
+	};
+
+	nfc_gpio_drv {
+		compatible = "nfc_gpio_drv";
+		qcom,nfc-nint   = <&tlmm 9  0x00>;
+		qcom,nfc-pon    = <&tlmm 62 0x00>;
+		qcom,nfc-status = <&tlmm 63 0x00>;
+		pinctrl-names = "nfc_pon_active","nfc_pon_suspend",
+						"nfc_status_active","nfc_status_suspend";
+		pinctrl-0 = <&nfc_pon_active>;
+		pinctrl-1 = <&nfc_pon_suspend>;
+		pinctrl-2 = <&nfc_status_active>;
+		pinctrl-3 = <&nfc_status_suspend>;
+	};
+
+	snfc_en {
+		compatible = "snfc_en";
+	};
+
+	gp2a_prox {
+		compatible = "gp2a-prox";
+		qcom,prox-int-gpio  = <&tlmm 120 0x00>;
+		interrupt-parent  = <&tlmm>;
+		interrupts = <120 0>;
+		interrupt-names = "prox_int";
+		pinctrl-names = "prox_int_active","prox_int_suspend";
+		pinctrl-0 = <&prox_int_active>;
+		pinctrl-1 = <&prox_int_suspend>;
+	};
+
+/* SH_USB_DRIVER add-> */ /*2015-11-10*/
+	qusb@7411000 {
+		qcom,qusb-phy-init-seq = <0xB8 0x80
+					0x11 0x84
+					0x83 0x88
+					0xC7 0x8C
+					0x30 0x08
+					0x79 0x0C
+					0x21 0x10
+					0x14 0x9C
+					0x80 0x04
+					0x9F 0x1C
+					0x00 0x18>;
+	};
+	qusb@7412000 {
+		qcom,qusb-phy-init-seq = <0xB8 0x80
+					0x11 0x84
+					0x83 0x88
+					0xC7 0x8C
+					0x30 0x08
+					0x79 0x0C
+					0x21 0x10
+					0x14 0x9C
+					0x80 0x04
+					0x9F 0x1C
+					0x00 0x18>;
+	};
+/* SH_USB_DRIVER add end-> */ /*2015-11-10*/
+
+/* SH_AUDIO_DRIVER -> */ /*21-001*/
+	sound-9335 {
+		qcom,model = "msm8996-tasha-fluid-snd-card";
+
+		qcom,audio-routing =
+			"AIF4 VI", "MCLK",
+			"RX_BIAS", "MCLK",
+			"MADINPUT", "MCLK",
+/* SH_AUDIO_DRIVER -> */ /*21-002*/
+			"Lineout_1 amp", "LINEOUT1",
+/* SH_AUDIO_DRIVER <- */ /*21-002*/
+			"AMIC1", "MIC BIAS1",
+			"MIC BIAS1", "Primary Mic",
+			"AMIC2", "MIC BIAS2",
+			"MIC BIAS2", "Headset Mic",
+			"AMIC3", "MIC BIAS3",
+			"MIC BIAS3", "Secondary Mic";
+/* SH_AUDIO_DRIVER -> */ /*21-002*/
+		qcom,wsa-max-devs = <0>;
+/* SH_AUDIO_DRIVER <- */ /*21-002*/
+/* SH_AUDIO_DRIVER -> */ /*21-004*/
+		qcom,mbhc-audio-jack-type = "4-pole-jack";
+		qcom,msm-mbhc-hphl-swh = <1>;
+/* SH_AUDIO_DRIVER <- */ /*21-004*/
+/* SH_AUDIO_DRIVER -> */ /*21-009*/
+        /delete-property/ qcom,hdmi-audio-rx;
+/* SH_AUDIO_DRIVER <- */ /*21-009*/
+	};
+/* SH_AUDIO_DRIVER <- */ /*21-001*/
+
+	flip_switch {
+		compatible = "flip_switch";
+		qcom,flip-det-gpio  = <&tlmm 122 0x00>;
+		interrupt-parent  = <&tlmm>;
+		interrupts = <122 0>;
+		interrupt-names = "flip_det";
+		pinctrl-names = "flip_det_active","flip_det_suspend";
+		pinctrl-0 = <&flip_det_active>;
+		pinctrl-1 = <&flip_det_suspend>;
+	};
+
+	tunctrl {
+		compatible = "tunctrl";
+		qcom,dtv-en-gpio = <&tlmm 75 0x00>;
+		qcom,dtv-rst-gpio = <&tlmm 93 0x00>;
+	};
+};
+/* SH_AUDIO_DRIVER -> */ /*21-003*/
+&slim_msm {
+	tasha_codec {
+		qcom,cdc-micbias1-mv = <2700>;
+		qcom,cdc-micbias2-mv = <2700>;
+		qcom,cdc-micbias3-mv = <2700>;
+/* SH_AUDIO_DRIVER -> */ /*21-010*/
+		qcom,cdc-mad-dmic-rate = <4800000>;
+/* SH_AUDIO_DRIVER <- */ /*21-010*/
+	};
+};
+/* SH_AUDIO_DRIVER <- */ /*21-003*/
+
+&spmi_bus {
+
+	qcom,pmi8994@3 {
+
+		pmi8994_haptics: qcom,haptic@c000 {
+			qcom,wave-play-rate-us = <4255>;
+			qcom,wave-shape = "sine";
+			qcom,vmax-mv = <1392>; 
+			qcom,brake-pattern = [03 02 01 00];
+		};
+	};
+};
+#include "sharp-dl90-pm8996.dtsi"
+#include "sharp-dl90-pmi8996.dtsi"

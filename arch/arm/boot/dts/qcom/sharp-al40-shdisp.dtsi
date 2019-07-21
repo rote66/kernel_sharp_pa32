@@ -1,0 +1,131 @@
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "sharp-shdisp-ir2e71y8.dtsi"
+#include "sharp-shdisp-dsi-panel-hayabusa-dual-al-1080p-cmd.dtsi"
+#include "sharp-shdisp-hayabusa.dtsi"
+
+&mdss_mdp {
+		/delete-node/ qcom,mdss_dsi_sharp_wqxga_video;
+		/delete-node/ qcom,mdss_dsi_nt35597_wqxga_video;
+		/delete-node/ qcom,mdss_dsi_nt35597_wqxga_cmd;
+		/delete-node/ qcom,mdss_dsi_nt35597_dsc_wqxga_video;
+		/delete-node/ qcom,dsi_jdi_qhd_video;
+		/delete-node/ qcom,mdss_dsi_jdi_qhd_dualmipi_cmd;
+		/delete-node/ qcom,dsi_jdi_4k_nofbc_video;
+		/delete-node/ qcom,mdss_dsi_sim_video;
+		/delete-node/ qcom,mdss_dsi_dual_sim_video;
+		/delete-node/ qcom,mdss_dsi_sim_cmd;
+		/delete-node/ qcom,mdss_dsi_dual_sim_cmd;
+		/delete-node/ qcom,mdss_dsi_nt35597_dsc_wqxga_cmd;
+		/delete-node/ qcom,mdss_dsi_hx8379a_fwvga_truly_vid;
+		/delete-node/ qcom,mdss_dsi_r69007_wqxga_cmd;
+};
+
+&soc {
+	sharp,shdisp_kerl {
+		status = "disable";
+		compatible = "sharp,shdisp_kerl";
+		test_mode_gpio = <&tlmm 38 0>;
+
+		pinctrl-names = "test_mode_pull_up", "test_mode_pull_down";
+		pinctrl-0 = <&shdisp_test_mode_pull_up>;
+		pinctrl-1 = <&shdisp_test_mode_pull_down>;
+	};
+};
+
+&soc {
+	i2c@75B5000 {
+		bdic_i2c@54 {
+			status = "ok";
+		};
+
+		bdic_i2c@39 {
+			status = "ok";
+		};
+	};
+};
+
+&soc {
+
+	sharp,shdisp_kerl {
+		status = "ok";
+	};
+	sharp,shdisp_ir2e71y8 {
+		status = "ok";
+	};
+	sharp,shdisp_panel_hayabusa {
+		status = "ok";
+	};
+};
+
+&dsi_shdisp_hayabusa_dual_cmd {
+	status = "ok";
+
+	qcom,mdss-pan-physical-width-dimension = <65>;
+	qcom,mdss-pan-physical-height-dimension = <116>;
+};
+
+&mdss_mdp {
+	qcom,mdss-pref-prim-intf = "dsi";
+};
+
+&mdss_dsi {
+	hw-config = "split_dsi";
+};
+
+&mdss_dsi0 {
+	qcom,dsi-pref-prim-pan=<&dsi_shdisp_hayabusa_dual_cmd>;
+	qcom,lane-map = "lane_map_0123";
+
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_te_active>;
+	pinctrl-1 = <&mdss_te_suspend>;
+
+	qcom,platform-te-gpio = <&tlmm 10 0>;
+
+	/delete-property/ vdd-supply;
+	/delete-property/ qcom,dsi-panel-bias-vreg;
+	/delete-property/ qcom,platform-reset-gpio;
+	/delete-property/ qcom,platform-bklight-en-gpio;
+	/delete-property/ qcom,platform-enable-gpio;
+
+	qcom,panel-supply-entries {
+		/delete-node/ qcom,panel-supply-entry@0;
+	};
+};
+
+&mdss_dsi1 {
+	qcom,dsi-pref-prim-pan=<&dsi_shdisp_hayabusa_dual_cmd>;
+	qcom,lane-map = "lane_map_0123";
+	/delete-property/ vdd-supply;
+
+	qcom,panel-supply-entries {
+		/delete-node/ qcom,panel-supply-entry@0;
+	};
+};
+
+&mdss_hdmi_tx {
+	status = "disabled";
+};
+
+&mdss_hdmi_pll {
+    status = "disabled";
+};
+
+&spmi_bus{
+    qcom,pmi8994@3{
+		qcom,leds@d000 {
+            status = "disabled";
+        };
+    };
+};

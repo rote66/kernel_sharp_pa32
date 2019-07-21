@@ -1,0 +1,104 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "sharp-al40-chg-param.dtsi"
+
+/*****************************************/
+/*  pmi8994-gpios: qpnp-pin               */
+/*****************************************/
+
+&pmi8994_gpios {
+
+	gpio@c000 { /* GPIO_01 */
+	};
+
+	gpio@c100 { /* GPIO_02 */
+	};
+
+	gpio@c200 { /* GPIO_03 */
+	};
+
+	gpio@c300 { /* GPIO_04 */
+	};
+
+	gpio@c400 { /* GPIO_05 */
+	};
+
+	gpio@c500 { /* GPIO_06 */
+	};
+
+	gpio@c600 { /* GPIO_07 */
+	};
+
+	gpio@c700 { /* GPIO_08 */
+	};
+
+	gpio@c800 { /* GPIO_09 */
+	};
+
+	gpio@c900 { /* GPIO_10 */
+	};
+};
+/*****************************************/
+/*  pmi8994-mpps: qpnp-pin                */
+/*****************************************/
+
+&pmi8994_mpps {
+
+	mpp@a000 { /* MPP_01 */
+	};
+
+	mpp@a100 { /* MPP_02 */
+	};
+
+	mpp@a200 { /* MPP_03 */
+	};
+
+	mpp@a300 { /* MPP_04 */
+	};
+};
+
+/*****************************************/
+/*  qpnp-adc-voltage                     */
+/*****************************************/
+
+&pmi8994_vadc {
+	chan@0 {
+	};
+
+	chan@1 {
+	};
+
+	chan@43 {
+	};
+
+	chan@44 {
+	};
+};
+
+/*****************************************/
+/*  pmi8994_charger                     */
+/*****************************************/
+&pmi8994_charger {
+};
+
+/{
+	sharp_al40_batterydata: qcom,battery-data {
+		#include "batterydata-sharp-al40.dtsi"
+	};
+};
+/*****************************************/
+/*  pmi8994_fg                           */
+/*****************************************/
+&pmi8994_fg {
+	qcom,battery-data = <&sharp_al40_batterydata>;
+};

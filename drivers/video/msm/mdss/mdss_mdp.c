@@ -1768,7 +1768,12 @@ static void mdss_mdp_hw_rev_caps_init(struct mdss_data_type *mdata)
 	/* prevent disable of prefill calculations */
 	mdata->min_prefill_lines = 0xffff;
 	/* clock gating feature is enabled by default */
+#ifdef CONFIG_SHDISP /* CUST_ID_00067 */
+	/* clock gating feature is disabled by default */
+	mdata->enable_gate = false;
+#else /* CONFIG_SHDISP */
 	mdata->enable_gate = true;
+#endif /* CONFIG_SHDISP */
 	mdata->pixel_ram_size = 0;
 	mem_protect_sd_ctrl_id = MEM_PROTECT_SD_CTRL_FLAT;
 
