@@ -3,7 +3,7 @@
 menu "DTV Tuner Configuration(Tmm)"
 
 config DTV_TUNERDEV_TMM
-	bool "set DTV tuner dev.(Tmm)"
+	tristate "set DTV tuner dev.(Tmm)"
 	default n
 
 

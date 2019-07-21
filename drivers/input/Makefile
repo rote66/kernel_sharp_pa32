@@ -28,6 +28,3 @@ obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
 obj-$(CONFIG_INPUT_KEYRESET)	+= keyreset.o
 obj-$(CONFIG_INPUT_KEYCOMBO)	+= keycombo.o
 
-EXTRA_CFLAGS += -DSVERSION_OF_SOFT=\"$(SH_BUILD_ID)\"
-EXTRA_CFLAGS += -DPANIC_TIME=4
-

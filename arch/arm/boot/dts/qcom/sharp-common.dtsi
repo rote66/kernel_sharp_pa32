@@ -54,6 +54,16 @@
 		};
 	};
 
+	firmware: firmware {
+		android {
+			fstab {
+				vendor {
+					dev = "/dev/block/platform/soc/7464900.sdhci/by-name/systemex";
+				 };
+			};
+		};
+	};
+
 	/*----------------------------------------------*/
 	/* shrlog                                       */
 	/*----------------------------------------------*/
@@ -377,6 +387,20 @@
         qcom,core-limit-temp = <75>;
         qcom,core-temp-hysteresis = <5>;
     };
+
+	/*----------------------------------------------*/
+	/* ramoops(shrlog)                              */
+	/*----------------------------------------------*/
+	ramoops {
+		compatible = "ramoops";
+		status = "okay";
+		android,ramoops-buffer-start = <0x917c0000>;
+		android,ramoops-buffer-size =  <0x40000>;
+		android,ramoops-console-size = <0x10000>;
+		android,ramoops-record-size = <0x10000>;
+		android,ramoops-pmsg-size = <0x20000>;
+		android,ramoops-dump-oops = <0x1>;
+	};
 
 	/*----------------------------------------------*/
 	/* shrlog                                       */

@@ -297,6 +297,9 @@ struct _mmc_csd {
 #define EXT_CSD_CMDQ_DEPTH		307	/* RO */
 #define EXT_CSD_CMDQ_SUPPORT		308	/* RO */
 #define EXT_CSD_BARRIER_SUPPORT		486	/* RO */
+#define EXT_CSD_PRE_EOL_INFO		267	/* RO */
+#define EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A	268	/* RO */
+#define EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B	269	/* RO */
 #ifdef CONFIG_FFU_EMMC_CUST_SH
 #define EXT_CSD_FFU_ARG			487	/* RO */
 #define EXT_CSD_SUPPORTED_MODES		493	/* RO */

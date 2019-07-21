@@ -25,6 +25,7 @@
 #include <linux/mount.h>
 #include <linux/personality.h>
 #include <linux/backing-dev.h>
+#include <linux/pfk.h>
 #include <net/flow.h>
 
 #define MAX_LSM_EVM_XATTR	2
@@ -33,10 +34,6 @@
 static __initdata char chosen_lsm[SECURITY_NAME_MAX + 1] =
 	CONFIG_DEFAULT_SECURITY;
 
-#ifdef CONFIG_SECURITY_MIYABI
-extern const struct security_operations selinux_ops;
-static const struct security_operations * const security_ops = &selinux_ops;
-#else
 static struct security_operations *security_ops;
 static struct security_operations default_security_ops = {
 	.name	= "default",
@@ -50,7 +47,6 @@ static inline int __init verify(struct security_operations *ops)
 	security_fixup_ops(ops);
 	return 0;
 }
-#endif /* CONFIG_SECURITY_MIYABI */
 
 static void __init do_security_initcalls(void)
 {
@@ -71,10 +67,8 @@ int __init security_init(void)
 {
 	printk(KERN_INFO "Security Framework initialized\n");
 
-#ifndef CONFIG_SECURITY_MIYABI
 	security_fixup_ops(&default_security_ops);
 	security_ops = &default_security_ops;
-#endif /* ! CONFIG_SECURITY_MIYABI */
 	do_security_initcalls();
 
 	return 0;
@@ -82,17 +76,13 @@ int __init security_init(void)
 
 void reset_security_ops(void)
 {
-#ifndef CONFIG_SECURITY_MIYABI
 	security_ops = &default_security_ops;
-#endif /* ! CONFIG_SECURITY_MIYABI */
 }
 
 /* Save user chosen LSM */
 static int __init choose_lsm(char *str)
 {
-#ifndef CONFIG_SECURITY_MIYABI
 	strncpy(chosen_lsm, str, SECURITY_NAME_MAX);
-#endif /* ! CONFIG_SECURITY_MIYABI */
 	return 1;
 }
 __setup("security=", choose_lsm);
@@ -130,9 +120,6 @@ int __init security_module_enable(struct security_operations *ops)
  */
 int __init register_security(struct security_operations *ops)
 {
-#ifdef CONFIG_SECURITY_MIYABI
-	return -EINVAL;
-#else /* CONFIG_SECURITY_MIYABI */
 	if (verify(ops)) {
 		printk(KERN_DEBUG "%s could not verify "
 		       "security_operations structure.\n", __func__);
@@ -145,7 +132,6 @@ int __init register_security(struct security_operations *ops)
 	security_ops = ops;
 
 	return 0;
-#endif /* CONFIG_SECURITY_MIYABI */
 }
 
 /* Security operations */
@@ -507,6 +493,7 @@ int security_path_chown(struct path *path, kuid_t uid, kgid_t gid)
 		return 0;
 	return security_ops->path_chown(path, uid, gid);
 }
+EXPORT_SYMBOL(security_path_chown);
 
 int security_path_chroot(struct path *path)
 {
@@ -847,20 +834,14 @@ int security_file_open(struct file *file, const struct cred *cred)
 	return fsnotify_perm(file, MAY_OPEN);
 }
 
-int security_file_close(struct file *file)
-{
-	if (security_ops->file_close)
-		return security_ops->file_close(file);
-
-	return 0;
-}
-
 bool security_allow_merge_bio(struct bio *bio1, struct bio *bio2)
 {
-	if (security_ops->allow_merge_bio)
-		return security_ops->allow_merge_bio(bio1, bio2);
+	bool ret = pfk_allow_merge_bio(bio1, bio2);
 
-	return true;
+	if (security_ops->allow_merge_bio)
+		ret = ret && security_ops->allow_merge_bio(bio1, bio2);
+
+	return ret;
 }
 
 int security_task_create(unsigned long clone_flags)

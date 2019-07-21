@@ -35,7 +35,7 @@
 	/delete-property/ qcom,autoadjust-vfloat;
 	qcom,jeita-temp-hard-limit = <1>;
 	/delete-property/ qcom,low-volt-dcin;
-	/delete-property/ qcom,force-aicl-rerun;
+	qcom,force-aicl-rerun;
 	qcom,aicl-rerun-period-s = <45>;
 // 	qcom,ibat-ocp-threshold-ua;
 	/delete-property/ qcom,soft-vfloat-comp-disabled;

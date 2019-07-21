@@ -249,6 +249,7 @@
 	qcom,dcin-vadc = <&pmi8994_vadc>;
 	qcom,charge-unknown-battery;
 	/delete-property/ qcom,charging-disabled;
+	sharp,full-display-flg-en;
 };
 
 /*****************************************/

@@ -1784,7 +1784,13 @@ static struct msm_actuator msm_vcm_actuator_table = {
 		.actuator_init_focus = msm_actuator_init_focus,
 		.actuator_parse_i2c_params = msm_actuator_parse_i2c_params,
 		.actuator_set_position = msm_actuator_set_position,
+/* SHLOCAL_CAMERA_DRIVERS-> */
+#if 0
 		.actuator_park_lens = msm_actuator_park_lens,
+#else
+		.actuator_park_lens = NULL,
+#endif
+/* SHLOCAL_CAMERA_DRIVERS<- */
 	},
 };
 

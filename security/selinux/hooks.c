@@ -84,7 +84,6 @@
 #include <linux/export.h>
 #include <linux/msg.h>
 #include <linux/shm.h>
-#include <linux/pft.h>
 #include <linux/pfk.h>
 
 #include "avc.h"
@@ -97,17 +96,7 @@
 #include "audit.h"
 #include "avc_ss.h"
 
-#ifdef CONFIG_SECURITY_MIYABI
-#include "miyabi.h"
-#endif /* CONFIG_SECURITY_MIYABI */
-
-#ifdef CONFIG_SECURITY_MIYABI
-#include "../capability.c"
-#endif /* CONFIG_SECURITY_MIYABI */
-
-#ifndef CONFIG_SECURITY_MIYABI
 extern struct security_operations *security_ops;
-#endif
 
 /* SECMARK reference count */
 static atomic_t selinux_secmark_refcount = ATOMIC_INIT(0);
@@ -137,12 +126,7 @@ static int __init selinux_enabled_setup(char *str)
 }
 __setup("selinux=", selinux_enabled_setup);
 #else
-
-#ifdef CONFIG_SECURITY_MIYABI
-const int selinux_enabled = 1;
-#else /* CONFIG_SECURITY_MIYABI */
 int selinux_enabled = 1;
-#endif /* CONFIG_SECURITY_MIYABI */
 #endif
 
 static struct kmem_cache *sel_inode_cache;
@@ -428,6 +412,7 @@ static int selinux_is_sblabel_mnt(struct super_block *sb)
 		!strcmp(sb->s_type->name, "sysfs") ||
 		!strcmp(sb->s_type->name, "pstore") ||
 		!strcmp(sb->s_type->name, "debugfs") ||
+		!strcmp(sb->s_type->name, "tracefs") ||
 		!strcmp(sb->s_type->name, "rootfs");
 }
 
@@ -752,6 +737,7 @@ static int selinux_set_mnt_opts(struct super_block *sb,
 		sbsec->flags |= SE_SBPROC | SE_SBGENFS;
 
 	if (!strcmp(sb->s_type->name, "debugfs") ||
+	    !strcmp(sb->s_type->name, "tracefs") ||
 	    !strcmp(sb->s_type->name, "sysfs") ||
 	    !strcmp(sb->s_type->name, "pstore"))
 		sbsec->flags |= SE_SBGENFS;
@@ -1218,8 +1204,6 @@ static inline u16 socket_type_to_security_class(int family, int type, int protoc
 		switch (protocol) {
 		case NETLINK_ROUTE:
 			return SECCLASS_NETLINK_ROUTE_SOCKET;
-		case NETLINK_FIREWALL:
-			return SECCLASS_NETLINK_FIREWALL_SOCKET;
 		case NETLINK_SOCK_DIAG:
 			return SECCLASS_NETLINK_TCPDIAG_SOCKET;
 		case NETLINK_NFLOG:
@@ -1228,14 +1212,28 @@ static inline u16 socket_type_to_security_class(int family, int type, int protoc
 			return SECCLASS_NETLINK_XFRM_SOCKET;
 		case NETLINK_SELINUX:
 			return SECCLASS_NETLINK_SELINUX_SOCKET;
+		case NETLINK_ISCSI:
+			return SECCLASS_NETLINK_ISCSI_SOCKET;
 		case NETLINK_AUDIT:
 			return SECCLASS_NETLINK_AUDIT_SOCKET;
-		case NETLINK_IP6_FW:
-			return SECCLASS_NETLINK_IP6FW_SOCKET;
+		case NETLINK_FIB_LOOKUP:
+			return SECCLASS_NETLINK_FIB_LOOKUP_SOCKET;
+		case NETLINK_CONNECTOR:
+			return SECCLASS_NETLINK_CONNECTOR_SOCKET;
+		case NETLINK_NETFILTER:
+			return SECCLASS_NETLINK_NETFILTER_SOCKET;
 		case NETLINK_DNRTMSG:
 			return SECCLASS_NETLINK_DNRT_SOCKET;
 		case NETLINK_KOBJECT_UEVENT:
 			return SECCLASS_NETLINK_KOBJECT_UEVENT_SOCKET;
+		case NETLINK_GENERIC:
+			return SECCLASS_NETLINK_GENERIC_SOCKET;
+		case NETLINK_SCSITRANSPORT:
+			return SECCLASS_NETLINK_SCSITRANSPORT_SOCKET;
+		case NETLINK_RDMA:
+			return SECCLASS_NETLINK_RDMA_SOCKET;
+		case NETLINK_CRYPTO:
+			return SECCLASS_NETLINK_CRYPTO_SOCKET;
 		default:
 			return SECCLASS_NETLINK_SOCKET;
 		}
@@ -1750,15 +1748,9 @@ static int may_create(struct inode *dir,
 	if (rc)
 		return rc;
 
-	rc = avc_has_perm(newsid, sbsec->sid,
-			  SECCLASS_FILESYSTEM,
-			  FILESYSTEM__ASSOCIATE, &ad);
-	if (rc)
-		return rc;
-
-	rc = pft_inode_mknod(dir, dentry, 0, 0);
-
-	return rc;
+	return avc_has_perm(newsid, sbsec->sid,
+						SECCLASS_FILESYSTEM,
+						FILESYSTEM__ASSOCIATE, &ad);
 }
 
 /* Check whether a task can create a key. */
@@ -1814,14 +1806,7 @@ static int may_link(struct inode *dir,
 		return 0;
 	}
 
-	rc = avc_has_perm(sid, isec->sid, isec->sclass, av, &ad);
-	if (rc)
-		return rc;
-
-	if (kind == MAY_UNLINK)
-		rc = pft_inode_unlink(dir, dentry);
-
-	return rc;
+	return avc_has_perm(sid, isec->sid, isec->sclass, av, &ad);
 }
 
 static inline int may_rename(struct inode *old_dir,
@@ -2223,12 +2208,6 @@ static int selinux_bprm_set_creds(struct linux_binprm *bprm)
 	struct common_audit_data ad;
 	struct inode *inode = file_inode(bprm->file);
 	int rc;
-
-#ifdef CONFIG_SECURITY_MIYABI
-	rc = miyabi_bprm_set_creds(bprm);
-	if (rc)
-		return rc;
-#endif
 
 	rc = cap_bprm_set_creds(bprm);
 	if (rc)
@@ -2729,13 +2708,6 @@ static int selinux_mount(const char *dev_name,
 {
 	const struct cred *cred = current_cred();
 
-#ifdef CONFIG_SECURITY_MIYABI
-	int rc;
-	rc = miyabi_sb_mount(dev_name, path, type, flags, data);
-	if (rc)
-		return rc;
-#endif
-
 	if (flags & MS_REMOUNT)
 		return superblock_has_perm(cred, path->dentry->d_sb,
 					   FILESYSTEM__REMOUNT, NULL);
@@ -2746,13 +2718,6 @@ static int selinux_mount(const char *dev_name,
 static int selinux_umount(struct vfsmount *mnt, int flags)
 {
 	const struct cred *cred = current_cred();
-
-#ifdef CONFIG_SECURITY_MIYABI
-	int rc;
-	rc = miyabi_sb_umount(mnt, flags);
-	if (rc)
-		return rc;
-#endif
 
 	return superblock_has_perm(cred, mnt->mnt_sb,
 				   FILESYSTEM__UNMOUNT, NULL);
@@ -2866,22 +2831,7 @@ static int selinux_inode_init_security(struct inode *inode, struct inode *dir,
 
 static int selinux_inode_create(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
-	int ret;
-
-	ret = pft_inode_create(dir, dentry, mode);
-	if (ret < 0)
-		return ret;
 	return may_create(dir, dentry, SECCLASS_FILE);
-}
-
-static int selinux_inode_post_create(struct inode *dir, struct dentry *dentry,
-				     umode_t mode)
-{
-	int ret;
-
-	ret = pft_inode_post_create(dir, dentry, mode);
-
-	return ret;
 }
 
 static int selinux_inode_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_dentry)
@@ -2917,12 +2867,6 @@ static int selinux_inode_mknod(struct inode *dir, struct dentry *dentry, umode_t
 static int selinux_inode_rename(struct inode *old_inode, struct dentry *old_dentry,
 				struct inode *new_inode, struct dentry *new_dentry)
 {
-	int rc;
-
-	rc = pft_inode_rename(old_inode, old_dentry, new_inode, new_dentry);
-	if (rc)
-		return rc;
-
 	return may_rename(old_inode, old_dentry, new_inode, new_dentry);
 }
 
@@ -3040,9 +2984,6 @@ static int selinux_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
 static int selinux_inode_setotherxattr(struct dentry *dentry, const char *name)
 {
 	const struct cred *cred = current_cred();
-
-	if (pft_inode_set_xattr(dentry, name, NULL, 0, 0) < 0)
-		return -EACCES;
 
 	if (!strncmp(name, XATTR_SECURITY_PREFIX,
 		     sizeof XATTR_SECURITY_PREFIX - 1)) {
@@ -3291,15 +3232,10 @@ static int selinux_file_permission(struct file *file, int mask)
 	struct file_security_struct *fsec = file->f_security;
 	struct inode_security_struct *isec = inode->i_security;
 	u32 sid = current_sid();
-	int ret;
 
 	if (!mask)
 		/* No permission to check.  Existence test. */
 		return 0;
-
-	ret = pft_file_permission(file, mask);
-	if (ret < 0)
-		return ret;
 
 	if (sid == fsec->sid && fsec->isid == isec->sid &&
 	    fsec->pseqno == avc_policy_seqno())
@@ -3595,18 +3531,6 @@ static int selinux_file_open(struct file *file, const struct cred *cred)
 {
 	struct file_security_struct *fsec;
 	struct inode_security_struct *isec;
-	int ret;
-
-#ifdef CONFIG_SECURITY_MIYABI
-	int rc;
-	rc = miyabi_file_open(file, cred);
-	if (rc)
-		return rc;
-#endif
-
-	ret = pft_file_open(file, cred);
-	if (ret < 0)
-		return ret;
 
 	fsec = file->f_security;
 	isec = file_inode(file)->i_security;
@@ -3628,18 +3552,6 @@ static int selinux_file_open(struct file *file, const struct cred *cred)
 	 * This check is not redundant - do not remove.
 	 */
 	return file_path_has_perm(cred, file, open_file_to_av(file));
-}
-
-static int selinux_file_close(struct file *file)
-{
-	return pft_file_close(file);
-}
-
-
-static bool selinux_allow_merge_bio(struct bio *bio1, struct bio *bio2)
-{
-	return pft_allow_merge_bio(bio1, bio2) &&
-		pfk_allow_merge_bio(bio1, bio2);
 }
 
 /* task security operations */
@@ -3768,7 +3680,6 @@ static int selinux_kernel_module_request(char *kmod_name)
 			    SYSTEM__MODULE_REQUEST, &ad);
 }
 
-#ifndef CONFIG_SECURITY_MIYABI
 static int selinux_kernel_module_from_file(struct file *file)
 {
 	struct common_audit_data ad;
@@ -3800,7 +3711,6 @@ static int selinux_kernel_module_from_file(struct file *file)
 	return avc_has_perm(sid, isec->sid, SECCLASS_SYSTEM,
 				SYSTEM__MODULE_LOAD, &ad);
 }
-#endif
 
 static int selinux_task_setpgid(struct task_struct *p, pid_t pgid)
 {
@@ -4467,13 +4377,6 @@ static int selinux_socket_getpeername(struct socket *sock)
 static int selinux_socket_setsockopt(struct socket *sock, int level, int optname)
 {
 	int err;
-
-#ifdef CONFIG_SECURITY_MIYABI
-	int rc;
-	rc = miyabi_socket_setsockopt(sock, level, optname);
-	if (rc)
-		return rc;
-#endif
 
 	err = sock_has_perm(current, sock->sk, SOCKET__SETOPT);
 	if (err)
@@ -5831,7 +5734,7 @@ static int selinux_setprocattr(struct task_struct *p,
 		return error;
 
 	/* Obtain a SID for the context, if one was specified. */
-	if (size && str[1] && str[1] != '\n') {
+	if (size && str[0] && str[0] != '\n') {
 		if (str[size-1] == '\n') {
 			str[size-1] = 0;
 			size--;
@@ -6047,11 +5950,7 @@ static int selinux_key_getsecurity(struct key *key, char **_buffer)
 
 #endif
 
-#ifdef CONFIG_SECURITY_MIYABI
-const struct security_operations selinux_ops = {
-#else /* CONFIG_SECURITY_MIYABI */
 static struct security_operations selinux_ops = {
-#endif /* CONFIG_SECURITY_MIYABI */
 	.name =				"selinux",
 
 	.binder_set_context_mgr =	selinux_binder_set_context_mgr,
@@ -6067,17 +5966,11 @@ static struct security_operations selinux_ops = {
 	.quotactl =			selinux_quotactl,
 	.quota_on =			selinux_quota_on,
 	.syslog =			selinux_syslog,
-#ifdef CONFIG_SECURITY_MIYABI
-	.settime = 			cap_settime,
-#endif
 	.vm_enough_memory =		selinux_vm_enough_memory,
 
 	.netlink_send =			selinux_netlink_send,
 
 	.bprm_set_creds =		selinux_bprm_set_creds,
-#ifdef CONFIG_SECURITY_MIYABI
-	.bprm_check_security =		cap_bprm_check_security,
-#endif
 	.bprm_committing_creds =	selinux_bprm_committing_creds,
 	.bprm_committed_creds =		selinux_bprm_committed_creds,
 	.bprm_secureexec =		selinux_bprm_secureexec,
@@ -6091,36 +5984,16 @@ static struct security_operations selinux_ops = {
 	.sb_statfs =			selinux_sb_statfs,
 	.sb_mount =			selinux_mount,
 	.sb_umount =			selinux_umount,
-#ifdef CONFIG_SECURITY_MIYABI
-	.sb_pivotroot = 		miyabi_sb_pivotroot,
-#endif
 	.sb_set_mnt_opts =		selinux_set_mnt_opts,
 	.sb_clone_mnt_opts =		selinux_sb_clone_mnt_opts,
 	.sb_parse_opts_str = 		selinux_parse_opts_str,
 
 	.dentry_init_security =		selinux_dentry_init_security,
 
-#ifdef CONFIG_SECURITY_MIYABI
-#ifdef CONFIG_SECURITY_PATH
-	.path_unlink =			cap_path_unlink,
-	.path_mkdir =			cap_path_mkdir,
-	.path_rmdir =			cap_path_rmdir,
-	.path_mknod = 			cap_path_mknod,
-	.path_truncate =		cap_path_truncate,
-	.path_symlink =			miyabi_path_symlink,
-	.path_link =			cap_path_link,
-	.path_rename =			cap_path_rename,
-	.path_chmod =			miyabi_path_chmod,
-	.path_chown =			cap_path_chown,
-	.path_chroot =			miyabi_path_chroot,
-#endif /* CONFIG_SECURITY_PATH */
-#endif /* CONFIG_SECURITY_MIYABI */
-
 	.inode_alloc_security =		selinux_inode_alloc_security,
 	.inode_free_security =		selinux_inode_free_security,
 	.inode_init_security =		selinux_inode_init_security,
 	.inode_create =			selinux_inode_create,
-	.inode_post_create =		selinux_inode_post_create,
 	.inode_link =			selinux_inode_link,
 	.inode_unlink =			selinux_inode_unlink,
 	.inode_symlink =		selinux_inode_symlink,
@@ -6138,10 +6011,6 @@ static struct security_operations selinux_ops = {
 	.inode_getxattr =		selinux_inode_getxattr,
 	.inode_listxattr =		selinux_inode_listxattr,
 	.inode_removexattr =		selinux_inode_removexattr,
-#ifdef CONFIG_SECURITY_MIYABI
-	.inode_need_killpriv =		cap_inode_need_killpriv,
-	.inode_killpriv =		cap_inode_killpriv,
-#endif
 	.inode_getsecurity =		selinux_inode_getsecurity,
 	.inode_setsecurity =		selinux_inode_setsecurity,
 	.inode_listsecurity =		selinux_inode_listsecurity,
@@ -6161,29 +6030,16 @@ static struct security_operations selinux_ops = {
 	.file_receive =			selinux_file_receive,
 
 	.file_open =			selinux_file_open,
-	.file_close =			selinux_file_close,
-	.allow_merge_bio =		selinux_allow_merge_bio,
 
 	.task_create =			selinux_task_create,
-#ifdef CONFIG_SECURITY_MIYABI
-	.task_free = 			cap_task_free,
-#endif
 	.cred_alloc_blank =		selinux_cred_alloc_blank,
 	.cred_free =			selinux_cred_free,
 	.cred_prepare =			selinux_cred_prepare,
 	.cred_transfer =		selinux_cred_transfer,
 	.kernel_act_as =		selinux_kernel_act_as,
 	.kernel_create_files_as =	selinux_kernel_create_files_as,
-#ifdef CONFIG_SECURITY_MIYABI
-	.kernel_fw_from_file =		cap_kernel_fw_from_file,
-#endif
 	.kernel_module_request =	selinux_kernel_module_request,
-#ifdef CONFIG_SECURITY_MIYABI
-	.kernel_module_from_file =	cap_kernel_module_from_file,
-	.task_fix_setuid = 		miyabi_task_fix_setuid,
-#else
 	.kernel_module_from_file =      selinux_kernel_module_from_file,
-#endif
 	.task_setpgid =			selinux_task_setpgid,
 	.task_getpgid =			selinux_task_getpgid,
 	.task_getsid =			selinux_task_getsid,
@@ -6197,9 +6053,6 @@ static struct security_operations selinux_ops = {
 	.task_movememory =		selinux_task_movememory,
 	.task_kill =			selinux_task_kill,
 	.task_wait =			selinux_task_wait,
-#ifdef CONFIG_SECURITY_MIYABI
-	.task_prctl = 			cap_task_prctl,
-#endif
 	.task_to_inode =		selinux_task_to_inode,
 
 	.ipc_permission =		selinux_ipc_permission,
@@ -6310,12 +6163,10 @@ static struct security_operations selinux_ops = {
 
 static __init int selinux_init(void)
 {
-#ifndef CONFIG_SECURITY_MIYABI
 	if (!security_module_enable(&selinux_ops)) {
 		selinux_enabled = 0;
 		return 0;
 	}
-#endif
 
 	if (!selinux_enabled) {
 		printk(KERN_INFO "SELinux:  Disabled at boot.\n");
@@ -6334,10 +6185,8 @@ static __init int selinux_init(void)
 					    0, SLAB_PANIC, NULL);
 	avc_init();
 
-#ifndef CONFIG_SECURITY_MIYABI
 	if (register_security(&selinux_ops))
 		panic("SELinux: Unable to register with kernel.\n");
-#endif
 
 	if (avc_add_callback(selinux_netcache_avc_callback, AVC_CALLBACK_RESET))
 		panic("SELinux: Unable to register AVC netcache callback\n");
@@ -6428,7 +6277,6 @@ static int __init selinux_nf_ip_init(void)
 
 __initcall(selinux_nf_ip_init);
 
-#ifndef CONFIG_SECURITY_MIYABI
 #ifdef CONFIG_SECURITY_SELINUX_DISABLE
 static void selinux_nf_ip_exit(void)
 {
@@ -6437,19 +6285,15 @@ static void selinux_nf_ip_exit(void)
 	nf_unregister_hooks(selinux_nf_ops, ARRAY_SIZE(selinux_nf_ops));
 }
 #endif
-#endif /* !CONFIG_SECURITY_MIYABI */
 
 #else /* CONFIG_NETFILTER */
 
-#ifndef CONFIG_SECURITY_MIYABI
 #ifdef CONFIG_SECURITY_SELINUX_DISABLE
 #define selinux_nf_ip_exit()
 #endif
-#endif /* !CONFIG_SECURITY_MIYABI */
 
 #endif /* CONFIG_NETFILTER */
 
-#ifndef CONFIG_SECURITY_MIYABI
 #ifdef CONFIG_SECURITY_SELINUX_DISABLE
 static int selinux_disabled;
 
@@ -6484,4 +6328,3 @@ int selinux_disable(void)
 	return 0;
 }
 #endif
-#endif /* !CONFIG_SECURITY_MIYABI */

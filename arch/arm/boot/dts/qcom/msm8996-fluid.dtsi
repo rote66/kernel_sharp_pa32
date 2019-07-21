@@ -600,6 +600,9 @@
 	status = "ok";
 };
 
+// COORDINATOR SH_Customize BUILDERR MODIFY start
+//#include "msm8996-sde-display.dtsi"
+// COORDINATOR SH_Customize BUILDERR MODIFY end
 #include "msm8996-mdss-panels.dtsi"
 
 &mdss_mdp {

@@ -1,6 +1,6 @@
 /* drivers/sharp/shterm/shterm_dev.c
  *
- * Copyright (C) 2011 Sharp Corporation
+ * Copyright (C) 2016 Sharp Corporation
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -25,9 +25,14 @@
 #include <linux/alarmtimer.h>
 #include <linux/ioctl.h>
 #include <linux/power_supply.h>
+#ifdef SHTERM_BS_TIMER
 #include "sharp/shdisp_kerl.h"
+#endif
 #include "sharp/shterm_k.h"
+
+#ifdef CONFIG_BATTERY_SH
 #include "sharp/shbatt_kerl.h"
+#endif
 
 #define SHTERM_NOR_TIMER_SEC (60*60)
 #define SHTERM_CHG_TIMER_SEC (10*60)
@@ -48,6 +53,7 @@ static struct wake_lock shterm_wake_lock;
 
 static void shterm_work_periodic_event( struct work_struct *work_p )
 {
+#ifdef CONFIG_BATTERY_SH
     shbatt_result_t ret = 0;
     shbatt_batt_log_info_t b_info = {0};
     shbattlog_info_t info = {0};
@@ -72,7 +78,6 @@ static void shterm_work_periodic_event( struct work_struct *work_p )
     info.lcd_temp = b_info.lcd_temp;
     info.pa_temp = b_info.pa_temp;
     info.avg_cur = b_info.avg_cur;
-    info.avg_vol = b_info.avg_vol;
     info.chg_vol = b_info.chg_vol;
     info.chg_cur = b_info.chg_cur;
     info.latest_cur = b_info.latest_cur;
@@ -123,6 +128,7 @@ static void shterm_work_periodic_event( struct work_struct *work_p )
     shterm_k_set_event( &info );
     /* set alarm */
     alarm_start( &shterm_dev_alarms, timespec_to_ktime(ts) );
+#endif //CONFIG_BATTERY_SH
 }
 
 static enum alarmtimer_restart shterm_timer_func( struct alarm *alarm, ktime_t now )

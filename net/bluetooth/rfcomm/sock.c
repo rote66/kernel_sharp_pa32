@@ -337,8 +337,7 @@ static int rfcomm_sock_bind(struct socket *sock, struct sockaddr *addr, int addr
 {
 	struct sockaddr_rc sa;
 	struct sock *sk = sock->sk;
-
-    int len, err = 0;
+	int len, err = 0;
 
 	if (!addr || addr->sa_family != AF_BLUETOOTH)
 		return -EINVAL;
@@ -363,7 +362,8 @@ static int rfcomm_sock_bind(struct socket *sock, struct sockaddr *addr, int addr
 
 	write_lock(&rfcomm_sk_list.lock);
 
-	if (sa.rc_channel && __rfcomm_get_listen_sock_by_addr(sa.rc_channel, &sa.rc_bdaddr)) {
+	if (sa.rc_channel &&
+	    __rfcomm_get_listen_sock_by_addr(sa.rc_channel, &sa.rc_bdaddr)) {
 		err = -EADDRINUSE;
 	} else {
 		/* Save source address */

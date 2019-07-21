@@ -526,21 +526,27 @@ static int shtps_io_ctl_param_copy_from_user(struct shtps_ioctl_param *krnl, uns
 	{
 		int err = 0;
 		int size = 0;
+		__u32 data_usr_ptr = 0;
 		struct shtps_compat_ioctl_param *usr = 
 			(struct shtps_compat_ioctl_param __user *) arg;
 
-		if(!usr || usr->size > SHTPS_FWDATA_BLOCK_SIZE_MAX){
+		if(!usr){
 			return -EINVAL;
 		}
-		
-		err |= get_user(krnl->size, &usr->size);
+
+		err |= get_user(size, &usr->size);
+		err |= get_user(data_usr_ptr, &usr->data);
 		if(!err){
-			if(!usr->data){
+			if(size > SHTPS_FWDATA_BLOCK_SIZE_MAX){
+				return -EINVAL;
+			}
+
+			krnl->size = size;
+			if(!data_usr_ptr){
 				krnl->data = NULL;
 			}else{
 				if(krnl->size < 0){
 					size = sizeof(int);
-
 				}else{
 					size = krnl->size;
 				}
@@ -550,12 +556,15 @@ static int shtps_io_ctl_param_copy_from_user(struct shtps_ioctl_param *krnl, uns
 					return -ENOMEM;
 				}
 
-				if(copy_from_user(krnl->data, compat_ptr(usr->data), size)){
+				if(copy_from_user(krnl->data, compat_ptr(data_usr_ptr), size)){
 					SHTPS_LOG_ERR_PRINT("[%s] copy_from_user error\n", __func__);
 					kfree(krnl->data);
 					return -EFAULT;
 				}
 			}
+		}
+		else{
+			return -EINVAL;
 		}
 
 		return err;
@@ -565,36 +574,46 @@ static int shtps_io_ctl_param_copy_from_user(struct shtps_ioctl_param *krnl, uns
 	{
 		int err = 0;
 		int size = 0;
+		unsigned char* data_usr_ptr;
 		struct shtps_ioctl_param *usr = 
 			(struct shtps_ioctl_param __user *) arg;
 
-		if(!usr || usr->size > SHTPS_FWDATA_BLOCK_SIZE_MAX){
+		if(!usr){
 			return -EINVAL;
 		}
-		
-		err |= get_user(krnl->size, &usr->size);
+
+		err |= get_user(size, &usr->size);
+		err |= get_user(data_usr_ptr, &usr->data);
 		if(!err){
-			if(!usr->data){
+			if(size > SHTPS_FWDATA_BLOCK_SIZE_MAX){
+				return -EINVAL;
+			}
+
+			krnl->size = size;
+			if(!data_usr_ptr){
 				krnl->data = NULL;
 			}else{
 				if(krnl->size < 0){
 					size = sizeof(int);
-
 				}else{
 					size = krnl->size;
 				}
+
 				krnl->data = (u8*)kmalloc(size, GFP_KERNEL);
 				if(!krnl->data){
 					SHTPS_LOG_ERR_PRINT("[%s] error\n", __func__);
 					return -ENOMEM;
 				}
 
-				if(copy_from_user(krnl->data, usr->data, size)){
+				if(copy_from_user(krnl->data, data_usr_ptr, size)){
 					SHTPS_LOG_ERR_PRINT("[%s] copy_from_user error\n", __func__);
 					kfree(krnl->data);
 					return -EFAULT;
 				}
 			}
+		}
+		else{
+			return -EINVAL;
 		}
 
 		return err;
@@ -607,30 +626,48 @@ static int shtps_io_ctl_param_copy_to_user(struct shtps_ioctl_param *krnl, unsig
 	if(isCompat == 1)
 	{
 		int err = 0;
+		int size = 0;
+		__u32 data_usr_ptr = 0;
 		struct shtps_compat_ioctl_param *usr = 
 			(struct shtps_compat_ioctl_param __user *) arg;
-		
-		if(krnl->data && usr->data){
-			if(copy_to_user((u8 __user *)compat_ptr(usr->data), krnl->data, usr->size)){
-				err = -EFAULT;
+
+		if(krnl->data){
+			err |= get_user(size, &usr->size);
+			err |= get_user(data_usr_ptr, &usr->data);
+			if(!err){
+				if(copy_to_user(compat_ptr(data_usr_ptr), krnl->data, size)){
+					err = -EFAULT;
+				}
+			}
+			else{
+				err = -EINVAL;
 			}
 		}
-		
+
 		return err;
 	}
 	else
 #endif /* CONFIG_COMPAT */
 	{
 		int err = 0;
+		int size = 0;
+		unsigned char* data_usr_ptr;
 		struct shtps_ioctl_param *usr = 
 			(struct shtps_ioctl_param __user *) arg;
-		
-		if(krnl->data && usr->data){
-			if(copy_to_user(usr->data, krnl->data, usr->size)){
-				err = -EFAULT;
+
+		if(krnl->data){
+			err |= get_user(size, &usr->size);
+			err |= get_user(data_usr_ptr, &usr->data);
+			if(!err){
+				if(copy_to_user(data_usr_ptr, krnl->data, size)){
+					err = -EFAULT;
+				}
+			}
+			else{
+				err = -EINVAL;
 			}
 		}
-		
+
 		return err;
 	}
 }

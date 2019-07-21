@@ -61,6 +61,8 @@ config FILE_LOCKING
           for filesystems like NFS and for the flock() system
           call. Disabling this option saves about 11k.
 
+source "fs/crypto/Kconfig"
+
 source "fs/notify/Kconfig"
 
 source "fs/quota/Kconfig"
@@ -90,12 +92,6 @@ menu "DOS/FAT/NT Filesystems"
 
 source "fs/fat/Kconfig"
 source "fs/ntfs/Kconfig"
-
-config EXFAT_FS
-  tristate "exFAT fs support"
-  default m
-  help
-    This option provides support for the exFAT file system.
 
 endmenu
 endif # BLOCK

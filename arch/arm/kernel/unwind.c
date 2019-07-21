@@ -550,3 +550,15 @@ void unwind_table_del(struct unwind_table *tab)
 
 	kfree(tab);
 }
+
+#ifdef CONFIG_SHARP_SHLOG_LATESTSTACK
+void* get_origin_unwind_addr(void)
+{
+	void* ret_addr = (void*)__origin_unwind_idx;
+	if (unlikely(!ret_addr))
+		ret_addr = (void*)unwind_find_origin(__start_unwind_idx, __stop_unwind_idx);
+	return ret_addr;
+}
+#endif /* CONFIG_SHARP_SHLOG_LATESTSTACK */
+
+

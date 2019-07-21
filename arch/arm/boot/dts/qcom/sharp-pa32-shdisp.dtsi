@@ -12,7 +12,6 @@
 
 #include "sharp-shdisp-ir2e71y8.dtsi"
 #include "sharp-shdisp-dsi-panel-hayabusa-dual-pa-1080p-cmd.dtsi"
-#include "sharp-shdisp-dsi-panel-hayabusa-dual-pa-1080p-video.dtsi"
 #include "sharp-shdisp-hayabusa.dtsi"
 
 &mdss_mdp {
@@ -76,13 +75,6 @@
 	qcom,mdss-pan-physical-height-dimension = <116>;
 };
 
-&dsi_shdisp_hayabusa_dual_video {
-	status = "ok";
-
-	qcom,mdss-pan-physical-width-dimension = <65>;
-	qcom,mdss-pan-physical-height-dimension = <116>;
-};
-
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
 };
@@ -136,19 +128,4 @@
             status = "disabled";
         };
     };
-};
-
-/ {
-	memory {
-		display_mem: display_mem@0 {
-			linux,reserve-contiguous-region;
-			linux,reserve-region;
-			reg = <0 0 0 0x00FF0000>;
-			label = "display_mem";
-		};
-	};
-};
-
-&mdss_fb0 {
-	linux,contiguous-region = <&display_mem>;
 };

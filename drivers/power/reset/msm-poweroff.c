@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -33,6 +33,10 @@
 #include <soc/qcom/restart.h>
 #include <soc/qcom/watchdog.h>
 
+#if defined(CONFIG_SHARP_HANDLE_PANIC) || defined(CONFIG_SHARP_HANDLE_SURFACE_FLINGER)
+#include <sharp/shrlog_restart.h>
+#endif /* CONFIG_SHARP_HANDLE_PANIC || CONFIG_SHARP_HANDLE_SURFACE_FLINGER */
+
 #define EMERGENCY_DLOAD_MAGIC1    0x322A4F99
 #define EMERGENCY_DLOAD_MAGIC2    0xC67E4350
 #define EMERGENCY_DLOAD_MAGIC3    0x77777777
@@ -60,11 +64,7 @@ static void scm_disable_sdi(void);
 * There is no API from TZ to re-enable the registers.
 * So the SDI cannot be re-enabled when it already by-passed.
 */
-#ifdef CONFIG_SHLOG_SYSTEM
-static int download_mode = 0;
-#else /* CONFIG_SHLOG_SYSTEM */
 static int download_mode = 1;
-#endif /* CONFIG_SHLOG_SYSTEM */
 #else
 static const int download_mode;
 #endif
@@ -195,6 +195,7 @@ static bool get_dload_mode(void)
 	return dload_mode_enabled;
 }
 
+#if 0
 static void enable_emergency_dload_mode(void)
 {
 	int ret;
@@ -219,6 +220,7 @@ static void enable_emergency_dload_mode(void)
 	if (ret)
 		pr_err("Failed to set secure EDLOAD mode: %d\n", ret);
 }
+#endif
 
 static int dload_set(const char *val, struct kernel_param *kp)
 {
@@ -235,9 +237,6 @@ static int dload_set(const char *val, struct kernel_param *kp)
 		download_mode = old_val;
 		return -EINVAL;
 	}
-#ifdef CONFIG_SHLOG_SYSTEM
-	qpnp_pon_set_restart_reason( download_mode != 0 ? PON_RESTART_REASON_UNKNOWN : PON_RESTART_REASON_WHILE_LINUX_RUNNING );
-#endif /* CONFIG_SHLOG_SYSTEM */
 
 	set_dload_mode(download_mode);
 
@@ -266,6 +265,30 @@ static bool get_dload_mode(void)
 	return false;
 }
 #endif
+
+#if defined(CONFIG_SHARP_HANDLE_PANIC)
+static struct sharp_msm_restart_callback *shrlog_cb = NULL;
+int sharp_msm_set_restart_callback(struct sharp_msm_restart_callback *cb)
+{
+	int old = download_mode;
+	shrlog_cb = cb;
+	if (!shrlog_cb)
+		return 0;
+	if (!restart_reason)
+		return 0;
+	if (shrlog_cb->restart_addr_set)
+		(*(shrlog_cb->restart_addr_set))(restart_reason);
+	if (shrlog_cb->preset_reason)
+		download_mode = (*(shrlog_cb->preset_reason))(old);
+	if (download_mode == old)
+		return 0;
+	set_dload_mode(download_mode);
+	if (!download_mode)
+		scm_disable_sdi();
+	return 0;
+}
+EXPORT_SYMBOL(sharp_msm_set_restart_callback);
+#endif /* CONFIG_SHARP_HANDLE_PANIC */
 
 static void scm_disable_sdi(void)
 {
@@ -332,36 +355,34 @@ static void msm_restart_prepare(const char *cmd)
 			(in_panic || restart_mode == RESTART_DLOAD));
 #endif
 
-#ifdef CONFIG_SHLOG_SYSTEM
-	qpnp_pon_set_restart_reason(PON_RESTART_REASON_UNKNOWN);
-	__raw_writel(0x00000000, restart_reason);
-#endif
-
 	if (qpnp_pon_check_hard_reset_stored()) {
 		/* Set warm reset as true when device is in dload mode */
 		if (get_dload_mode() ||
 			((cmd != NULL && cmd[0] != '\0') &&
 			!strcmp(cmd, "edl")))
 			need_warm_reset = true;
-#ifdef CONFIG_SHLOG_SYSTEM
-		if( cmd != NULL ){
-		    if( !strncmp(cmd, "emergency", 9) ){
-			need_warm_reset = true;
-		    }
-		    else if( !strncmp(cmd, "surfaceflinger", 14) ){
-			need_warm_reset = true;
-		    }
 #if defined(CONFIG_MSM_DLOAD_MODE) && defined(CONFIG_SHBOOT_CUST)
-		    else if( !strncmp(cmd, "downloader", 10) ){
+		if( cmd != NULL ){
+		    if( !strncmp(cmd, "downloader", 10) ){
 			need_warm_reset = true;
 		    }
-#endif /* CONFIG_MSM_DLOAD_MODE && CONFIG_SHBOOT_CUST */
 		}
-#endif /* CONFIG_SHLOG_SYSTEM */
+#endif /* CONFIG_MSM_DLOAD_MODE && CONFIG_SHBOOT_CUST */
 	} else {
 		need_warm_reset = (get_dload_mode() ||
-				(cmd != NULL && cmd[0] != '\0'));
+				((cmd != NULL && cmd[0] != '\0') &&
+				strcmp(cmd, "userrequested")));
 	}
+
+#if defined(CONFIG_SHARP_HANDLE_PANIC)
+	if (shrlog_cb && shrlog_cb->warm_reset_ow) {
+		need_warm_reset = (*(shrlog_cb->warm_reset_ow))(need_warm_reset,
+								cmd, 
+								get_dload_mode(),
+								restart_mode,
+								in_panic);
+	}
+#endif /* CONFIG_SHARP_HANDLE_PANIC */
 
 	/* Hard reset the PMIC unless memory contents must be maintained. */
 	if (need_warm_reset) {
@@ -379,24 +400,6 @@ static void msm_restart_prepare(const char *cmd)
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_RECOVERY);
 			__raw_writel(0x77665502, restart_reason);
-#ifdef CONFIG_SHLOG_SYSTEM
-		} else if (!strncmp(cmd, "emergency", 9)) {
-			if ( ! get_dload_mode() ){
-				qpnp_pon_set_restart_reason(PON_RESTART_REASON_EMERGENCY_NODLOAD);
-			}
-			if (restart_mode == RESTART_MODEM_CRASH) {
-				__raw_writel(0x77665595, restart_reason);
-			} else if (restart_mode == RESTART_L1_ERROR) {
-				__raw_writel(0x77665593, restart_reason);
-			} else {
-				__raw_writel(0x77665590, restart_reason);
-			}
-		} else if (!strncmp(cmd, "surfaceflinger", 14)) {
-			if ( ! get_dload_mode() ){
-				qpnp_pon_set_restart_reason(PON_RESTART_REASON_EMERGENCY_NODLOAD);
-			}
-			__raw_writel(0x77665594, restart_reason);
-#endif /* CONFIG_SHLOG_SYSTEM */
 		} else if (!strcmp(cmd, "rtc")) {
 			qpnp_pon_set_restart_reason(
 				PON_RESTART_REASON_RTC);
@@ -420,8 +423,10 @@ static void msm_restart_prepare(const char *cmd)
 			if (!ret)
 				__raw_writel(0x6f656d00 | (code & 0xff),
 					     restart_reason);
+#if 0
 		} else if (!strncmp(cmd, "edl", 3)) {
 			enable_emergency_dload_mode();
+#endif
 #if defined(CONFIG_MSM_DLOAD_MODE) && defined(CONFIG_SHBOOT_CUST)
 		} else if (!strncmp(cmd, "downloader", 10)) {
 			sh_set_dload_mode(1);
@@ -430,6 +435,12 @@ static void msm_restart_prepare(const char *cmd)
 			__raw_writel(0x77665501, restart_reason);
 		}
 	}
+
+#if defined(CONFIG_SHARP_HANDLE_PANIC)
+	if (shrlog_cb && shrlog_cb->restart_reason_ow)
+		(*(shrlog_cb->restart_reason_ow))(cmd, get_dload_mode(),
+						  restart_mode, in_panic);
+#endif /* CONFIG_SHARP_HANDLE_PANIC */
 
 	flush_cache_all();
 
@@ -491,14 +502,13 @@ static void do_msm_poweroff(void)
 {
 	pr_notice("Powering off the SoC\n");
 
+#ifdef CONFIG_SHARP_HANDLE_PANIC
+	if (shrlog_cb && shrlog_cb->poweroff_ow)
+		(*(shrlog_cb->poweroff_ow))();
+#endif /* CONFIG_SHARP_HANDLE_PANIC */
+
 	set_dload_mode(0);
 	scm_disable_sdi();
-
-#ifdef CONFIG_SHLOG_SYSTEM
-	qpnp_pon_set_restart_reason(PON_RESTART_REASON_UNKNOWN);
-	__raw_writel(0x00000000, restart_reason);
-#endif /* CONFIG_SHLOG_SYSTEM */
-
 	qpnp_pon_system_pwr_off(PON_POWER_OFF_SHUTDOWN);
 
 	halt_spmi_pmic_arbiter();
@@ -753,10 +763,14 @@ skip_sysfs_create:
 	pm_power_off = do_msm_poweroff;
 	arm_pm_restart = do_msm_restart;
 
-#ifdef CONFIG_SHLOG_SYSTEM
-	qpnp_pon_set_restart_reason( download_mode != 0 ? PON_RESTART_REASON_UNKNOWN : PON_RESTART_REASON_WHILE_LINUX_RUNNING );
-	__raw_writel(0x77665577, restart_reason);
-#endif /* CONFIG_SHLOG_SYSTEM */
+#ifdef CONFIG_SHARP_HANDLE_PANIC
+	if (shrlog_cb) {
+		if (shrlog_cb->restart_addr_set)
+			(*(shrlog_cb->restart_addr_set))(restart_reason);
+		if (shrlog_cb->preset_reason)
+			download_mode = (*(shrlog_cb->preset_reason))(download_mode);
+	}
+#endif /* CONFIG_SHARP_HANDLE_PANIC */
 
 	if (scm_is_call_available(SCM_SVC_PWR, SCM_IO_DISABLE_PMIC_ARBITER) > 0)
 		scm_pmic_arbiter_disable_supported = true;

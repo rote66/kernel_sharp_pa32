@@ -270,7 +270,6 @@ static const struct file_operations sel_handle_status_ops = {
 	.llseek		= generic_file_llseek,
 };
 
-#ifndef CONFIG_SECURITY_MIYABI
 #ifdef CONFIG_SECURITY_SELINUX_DISABLE
 static ssize_t sel_write_disable(struct file *file, const char __user *buf,
 				 size_t count, loff_t *ppos)
@@ -320,9 +319,6 @@ out:
 #else
 #define sel_write_disable NULL
 #endif
-#else /* CONFIG_SECURITY_MIYABI */
-#define sel_write_disable NULL
-#endif /* !CONFIG_SECURITY_MIYABI */
 
 static const struct file_operations sel_disable_ops = {
 	.write		= sel_write_disable,
@@ -1934,7 +1930,6 @@ static int __init init_sel_fs(void)
 
 __initcall(init_sel_fs);
 
-#ifndef CONFIG_SECURITY_MIYABI
 #ifdef CONFIG_SECURITY_SELINUX_DISABLE
 void exit_sel_fs(void)
 {
@@ -1943,5 +1938,3 @@ void exit_sel_fs(void)
 	unregister_filesystem(&sel_fs_type);
 }
 #endif
-#endif /* !CONFIG_SECURITY_MIYABI */
-

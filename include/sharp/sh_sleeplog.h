@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 #ifdef CONFIG_SH_SLEEP_LOG
-#ifndef _SH_DEBUGDUMP_H
-#define _SH_DEBUGDUMP_H
+#ifndef _SH_SLEEPLOG_H
+#define _SH_SLEEPLOG_H
 
 #include <linux/alarmtimer.h>
 #include <linux/time.h>
@@ -37,5 +37,5 @@ char *sh_write_buffer_uid_stat_internal(char *buffer,
 char *sh_write_buffer_uid_stat_finish(char *buffer, char *head);
 void sh_get_process_name(struct task_struct *task, char *result_name);
 
-#endif  /* _SH_DEBUGDUMP_H */
+#endif  /* _SH_SLEEPLOG_H */
 #endif /* CONFIG_SH_SLEEP_LOG */

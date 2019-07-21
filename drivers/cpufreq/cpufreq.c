@@ -28,6 +28,9 @@
 #include <linux/slab.h>
 #include <linux/suspend.h>
 #include <linux/tick.h>
+#ifdef CONFIG_SMP
+#include <linux/sched.h>
+#endif
 #include <trace/events/power.h>
 
 #ifdef CONFIG_SHSYS_CUST_DEBUG
@@ -137,6 +140,12 @@ bool have_governor_per_policy(void)
 	return !!(cpufreq_driver->flags & CPUFREQ_HAVE_GOVERNOR_PER_POLICY);
 }
 EXPORT_SYMBOL_GPL(have_governor_per_policy);
+
+bool cpufreq_driver_is_slow(void)
+{
+	return !(cpufreq_driver->flags & CPUFREQ_DRIVER_FAST);
+}
+EXPORT_SYMBOL_GPL(cpufreq_driver_is_slow);
 
 struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy)
 {
@@ -314,6 +323,50 @@ static inline void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
 }
 #endif
 
+/*********************************************************************
+ *               FREQUENCY INVARIANT CPU CAPACITY                    *
+ *********************************************************************/
+
+static DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
+static DEFINE_PER_CPU(unsigned long, max_freq_scale) = SCHED_CAPACITY_SCALE;
+
+static void
+scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
+{
+	unsigned long cur = freqs ? freqs->new : policy->cur;
+	unsigned long scale = (cur << SCHED_CAPACITY_SHIFT) / policy->max;
+	struct cpufreq_cpuinfo *cpuinfo = &policy->cpuinfo;
+	int cpu;
+
+	pr_debug("cpus %*pbl cur/cur max freq %lu/%u kHz freq scale %lu\n",
+		 cpumask_pr_args(policy->cpus), cur, policy->max, scale);
+
+	for_each_cpu(cpu, policy->cpus)
+		per_cpu(freq_scale, cpu) = scale;
+
+	if (freqs)
+		return;
+
+	scale = (policy->max << SCHED_CAPACITY_SHIFT) / cpuinfo->max_freq;
+
+	pr_debug("cpus %*pbl cur max/max freq %u/%u kHz max freq scale %lu\n",
+		 cpumask_pr_args(policy->cpus), policy->max, cpuinfo->max_freq,
+		 scale);
+
+	for_each_cpu(cpu, policy->cpus)
+		per_cpu(max_freq_scale, cpu) = scale;
+}
+
+unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
+{
+	return per_cpu(freq_scale, cpu);
+}
+
+unsigned long cpufreq_scale_max_freq_capacity(int cpu)
+{
+	return per_cpu(max_freq_scale, cpu);
+}
+
 static void __cpufreq_notify_transition(struct cpufreq_policy *policy,
 		struct cpufreq_freqs *freqs, unsigned int state)
 {
@@ -390,7 +443,6 @@ static void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
 void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
 		struct cpufreq_freqs *freqs)
 {
-
 	/*
 	 * Catch double invocations of _begin() which lead to self-deadlock.
 	 * ASYNC_NOTIFICATION drivers are left out because the cpufreq core
@@ -416,6 +468,8 @@ wait:
 	policy->transition_task = current;
 
 	spin_unlock(&policy->transition_lock);
+
+	scale_freq_capacity(policy, freqs);
 
 	cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
 }
@@ -1533,8 +1587,10 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
 		list_del(&policy->policy_list);
 		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
-		if (!cpufreq_suspended)
+		if (!cpufreq_suspended) {
+			flush_work(&policy->update);
 			cpufreq_policy_free(policy);
+		}
 	} else if (has_target()) {
 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
 		if (!ret)
@@ -2230,6 +2286,45 @@ EXPORT_SYMBOL_GPL(cpufreq_unregister_governor);
 /*********************************************************************
  *                          POLICY INTERFACE                         *
  *********************************************************************/
+#ifdef CONFIG_SHSYS_CUST
+int sh_cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+				   unsigned int *target_freq,
+				   unsigned int relation)
+{
+	struct cpufreq_frequency_table *freq_table, *pos;
+	unsigned int result_freq = policy->cpuinfo.min_freq;
+
+	freq_table = cpufreq_frequency_get_table(policy->cpu);
+	if (unlikely(!freq_table)) {
+		pr_err("%s: Unable to find freq_table\n", __func__);
+		return -ENODEV;
+	}
+
+	cpufreq_for_each_valid_entry(pos, freq_table) {
+		switch (relation) {
+		case CPUFREQ_RELATION_H:
+			if (pos->frequency > *target_freq) {
+				*target_freq = result_freq;
+				return 0;
+			}
+			result_freq = pos->frequency;
+			break;
+		case CPUFREQ_RELATION_L:
+			result_freq = pos->frequency;
+			if (pos->frequency >= *target_freq) {
+				*target_freq = result_freq;
+				return 0;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	*target_freq = result_freq;
+	return 0;
+}
+#endif /* CONFIG_SHSYS_CUST */
 
 /**
  * cpufreq_get_policy - get the current cpufreq_policy
@@ -2303,6 +2398,8 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
 	/* notification of the new policy */
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 			CPUFREQ_NOTIFY, new_policy);
+
+	scale_freq_capacity(new_policy, NULL);
 
 	policy->min = new_policy->min;
 	policy->max = new_policy->max;

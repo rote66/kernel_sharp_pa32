@@ -15,11 +15,6 @@ selinux-$(CONFIG_NETLABEL) += netlabel.o
 
 ccflags-y := -Isecurity/selinux -Isecurity/selinux/include
 
-
-ifeq ($(CONFIG_SECURITY_MIYABI),y)
-ccflags-y += -Isecurity/miyabi
-endif
-
 $(addprefix $(obj)/,$(selinux-y)): $(obj)/flask.h
 
 quiet_cmd_flask = GEN     $(obj)/flask.h $(obj)/av_permissions.h

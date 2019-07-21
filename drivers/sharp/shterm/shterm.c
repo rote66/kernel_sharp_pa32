@@ -1,6 +1,6 @@
 /* drivers/sharp/shterm/shterm.c
  *
- * Copyright (C) 2011 Sharp Corporation
+ * Copyright (C) 2016 Sharp Corporation
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -51,177 +51,179 @@ typedef struct {
 } shbattlog_disp_type;
 
 static const shbattlog_disp_type event_str[] =
-    {{4,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {3,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {0,1,0,0,1,1,1,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,1,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,1,1,1,1,1,1,1,1,1},
-     {0,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
-     {0,1,0,0,1,1,1,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,1,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,1,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,1,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,1,0,0,0,0,1,0,1,0},
-     {0,1,0,0,1,1,1,0,0,0,0,1,0,1,0},
-     {0,1,0,0,1,1,1,0,0,0,0,1,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {3,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,1,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,1,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,0,0,1,1,1,0,1,1,1,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},
-     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+    {{4,0,0,0,0,0,0,0,0,0,0,0,0,0,0},   /* SHBATTLOG_EVENT_NONE                                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_POWER_ON                                         */
+     {3,0,0,0,0,0,0,0,0,0,0,0,0,0,0},   /* SHBATTLOG_EVENT_ON_INFO                                          */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_POWER_OFF                                        */
+     {0,1,0,0,1,1,1,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FATAL_BATT                                       */
+     {0,1,0,0,1,1,1,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_BATT_ID_INVALID                                  */
+     {0,1,0,0,1,1,1,1,1,1,1,1,1,1,1},   /* SHBATTLOG_EVENT_BATT_REPORT_NORM                                 */
+     {0,1,1,1,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_BATT_REPORT_CHG                                  */
+     {0,1,0,0,1,1,1,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_INDICATER_0                                      */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_INSERT_CHGR                                  */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_REMOVE_CHGR                                  */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_INSERT_USB                                   */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_REMOVE_USB                                   */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_INSERT_MHL                                   */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_REMOVE_MHL                                   */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_PUT_CRADLE                                   */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_REMOVE_CRADLE                                */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_PUT_WIRELESS                                 */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_REMOVE_WIRELESS                              */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_INSERT_PROP_CHGR                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_REMOVE_PROP_CHGR                             */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_END                                          */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_START                                        */
+     {0,1,0,0,1,1,0,0,0,0,0,1,0,1,0},   /* SHBATTLOG_EVENT_CHG_COMP                                         */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_RESTART                                      */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_ERROR                                        */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_IDLE_ST                                      */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_FAST_ST                                      */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_MAINT_STT                                    */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_HOT_FAST_STT                                 */
+     {0,1,0,0,1,1,0,0,0,0,0,1,0,1,0},   /* SHBATTLOG_EVENT_CHG_HOT_ADD_FAST_STT                             */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_ERR_BD_BAT_UNUSUAL_STT                       */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_ERR_BD_CHG_UNUSUAL_STT                       */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_ERR_CHG_POWER_SHORTAGE_ST                    */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_ERR_BAT_ID_INVALID_ST                        */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_HOT_STOP_ST                                  */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_COLD_STOP_ST                                 */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_MAINT_STOP_ST                                */
+     {0,1,0,0,1,1,0,0,0,0,0,1,0,1,0},   /* SHBATTLOG_EVENT_CHG_COUNT_OVER_STOP_ST                           */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHGR_OSCILLATION                                 */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX10                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX20                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX30                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX40                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX50                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX60                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX70                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX80                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX90                                        */
+     {0,1,0,0,1,1,0,0,0,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_EX100                                       */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_NOMAL                                       */
+     {0,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FGIC_INVALID                                     */
+     {0,1,0,0,1,1,1,0,0,0,0,1,0,1,0},   /* SHBATTLOG_EVENT_OVER_CURRENT1                                    */
+     {0,1,0,0,1,1,1,0,0,0,0,1,0,1,0},   /* SHBATTLOG_EVENT_OVER_CURR1_DET                                   */
+     {0,1,0,0,1,1,1,0,0,0,0,1,0,1,0},   /* SHBATTLOG_EVENT_OVER_CURR1_RELEASE                               */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_VOICE_START                                      */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_VOICE_END                                        */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_DATA_START                                       */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_DATA_END                                         */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_DVM_REBOOT                                       */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_REBOOT                                           */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_REBOOT_REASON                                    */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_ALLRESET                                         */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_CPU_HIGHTEMP_SHUTDOWN                            */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_CLEANUP_REBOOT                                   */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_ABSENT                                 */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_NOT_READY                              */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_READY                                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_PIN                                    */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_PUK                                    */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_NETWORK_PERSONALIZATION                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_ILLEGAL                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_REMOVED                           */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ADDED                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_UNKNOWN                     */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_POWER_DOWN                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_POLL_ERROR                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_VOLT_MISMATCH               */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_PARITY_ERROR                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_UNKNOWN_REMOVED             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_CODE_SIM_TECHNICAL_PROBLEMS */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_NULL_BYTES                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SIM_STATE_CARD_ERROR_SAP_CONNECTED               */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_AC                                             */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_HO                                             */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_DI                                             */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_AL                                             */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_IN                                             */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_WA                                             */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_AN                                             */
+     {2,1,0,0,1,1,2,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_C_EN                                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SMT                                              */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SUMT                                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SCER                                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SDCHKDSK_FATAL_ERR                               */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SDCHKDSK_NO_MEMORY_ERR                           */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FMT_GET_DAREA_ERR                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FMT_GET_PAREA_ERR                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FMT_MINSIZE_ERR                                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FMT_MAXSIZE_ERR                                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_FMT_SYS_ERR                                      */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_DETECTED                                      */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_DETECT_FAILED                                 */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_PHY_REMOVED                                   */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_SOFT_REMOVED                                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_UNKNOWN_UNKNOWN                         */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_UNKNOWN_CMD_TIMEOUT                     */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_UNKNOWN_DATA_TIMEOUT                    */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_UNKNOWN_REQ_TIMEOUT                     */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_UNKNOWN_CMD_CRC_ERROR                   */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_UNKNOWN_DATA_CRC_ERROR                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_UNKNOWN_OTHER_ERROR                     */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_READ_UNKNOWN                            */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_READ_CMD_TIMEOUT                        */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_READ_DATA_TIMEOUT                       */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_READ_REQ_TIMEOUT                        */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_READ_CMD_CRC_ERROR                      */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_READ_DATA_CRC_ERROR                     */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_READ_OTHER_ERROR                        */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_WRITE_UNKNOWN                           */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_WRITE_CMD_TIMEOUT                       */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_WRITE_DATA_TIMEOUT                      */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_WRITE_REQ_TIMEOUT                       */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_WRITE_CMD_CRC_ERROR                     */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_WRITE_DATA_CRC_ERROR                    */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_WRITE_OTHER_ERROR                       */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_MISC_UNKNOWN                            */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_MISC_CMD_TIMEOUT                        */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_MISC_DATA_TIMEOUT                       */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_MISC_REQ_TIMEOUT                        */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_MISC_CMD_CRC_ERROR                      */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_MISC_DATA_CRC_ERROR                     */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SD_ERROR_MISC_OTHER_ERROR                        */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SELFCHECK_NG                                     */
+     {3,0,0,0,0,0,0,0,0,0,0,0,0,0,0},   /* SHBATTLOG_EVENT_SD_INFO                                          */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_HOT_STANDBY_ON                                   */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_HOT_STANDBY_OFF                                  */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SMT_ENC                                          */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SFMT                                             */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SFMT_ENC                                         */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_DATA_ENC                                         */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SHTHERMAL_POWER_OFF_DIALOG                       */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SHTHERMAL_POWER_OFF                              */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SHTHERMAL_LCD_RESTRICT                           */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SHTHERMAL_LCD_RELEASE                            */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SHTHERMAL_LCD_HIGH_TEMP_POWER_OFF                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_SHTHERMAL_LCD_LOW_TEMP_POWER_OFF                 */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_ALLRESET_MDM                                     */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_ALLRESET_EXC                                     */
+     {1,1,0,0,1,1,1,1,1,1,1,1,1,1,0},   /* SHBATTLOG_EVENT_ERROR_CONSUMPTION_HOT_STANDBY_OFF                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_INSERT_AUDIO_PLUG                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_REMOVE_AUDIO_PLUG                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_INSERT_PIERCE_PLUG                               */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_REMOVE_PIERCE_PLUG                               */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_INSERT_HEADSET_PLUG                              */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_REMOVE_HEADSET_PLUG                              */
+     {1,1,0,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_HOST_MODE_START                                  */
+     {1,1,0,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_HOST_MODE_END                                    */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_TPS_CRC_ERROR                                    */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_TPS_CRC_ERROR_MAX                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_TPS_CRC_ERROR_FIX                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_AUDIO_PATH_CHANGE                                */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CAPACITY_FAILSAFE                                */
+     {0,1,0,0,1,1,1,0,1,1,1,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_COLD_FAST_ST                                 */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_TYPE_SDP                                     */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_TYPE_CDP                                     */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_TYPE_DCP                                     */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_TYPE_HVDCP                                   */
+     {0,1,1,1,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_CHG_TYPE_OTHER                                   */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_INTERNALSTORAGE_MOUNT                            */
+     {1,1,0,0,1,1,0,0,0,0,0,0,0,1,0},   /* SHBATTLOG_EVENT_INTERNALSTORAGE_UNMOUNT                          */
+     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};  /* SHBATTLOG_EVENT_QUEUE_FULL                                       */
 
 typedef struct {
     const char *name;
@@ -269,6 +271,7 @@ static int lte_min = -1;
 static int lte_max = -1;
 static int lte_old = -1;
 static int shterm_init = 0;
+static int is_shterm_kobject_initialized = 0;
 
 static int shterm_shtps_state = SHTERM_TPS_STATE_NONE;
 
@@ -293,7 +296,7 @@ static shterm_id_tbl id_k_tbl[SHTERM_MAX] =
      { SHTERM_INFO_SD, "SHTERM_INFO_SD" },
      { SHTERM_INFO_GBNAND, "SHTERM_INFO_GBNAND" },
      { SHTERM_INFO_USB, "SHTERM_INFO_USB" },
-     { SHTERM_INFO_WLAN_ASSOC, "SHTERM_INFO_WTAP" },
+     { SHTERM_INFO_WTAP, "SHTERM_INFO_WTAP" },
      { SHTERM_INFO_GPS, "SHTERM_INFO_GPS" },
      { SHTERM_INFO_ACCELE, "SHTERM_INFO_ACCELE" },
      { SHTERM_INFO_COMPS, "SHTERM_INFO_COMPS" },
@@ -303,12 +306,14 @@ static shterm_id_tbl id_k_tbl[SHTERM_MAX] =
      { SHTERM_INFO_LMK_S1, "SHTERM_INFO_LMK_S1" },
      { SHTERM_INFO_LMK_TH1, "SHTERM_INFO_LMK_TH1" },
      { SHTERM_INFO_LMK_TH2, "SHTERM_INFO_LMK_TH2" },
-     { SHTERM_INFO_FINGER_AUTH, "SHTERM_INFO_LMK_TH3" },
+     { SHTERM_INFO_LMK_TH3, "SHTERM_INFO_LMK_TH3" },
      { SHTERM_INFO_GYRO, "SHTERM_INFO_GYRO" },
      { SHTERM_INFO_PEDOMETER, "SHTERM_INFO_PEDOMETER" },
      { SHTERM_INFO_MUSIC_TNL, "SHTERM_INFO_MUSIC_TNL" },
      { SHTERM_INFO_ALARM, "SHTERM_INFO_ALARM" },
-     { SHTERM_INFO_GRIP, "SHTERM_INFO_GRIP" }};
+     { SHTERM_INFO_GRIP, "SHTERM_INFO_GRIP" },
+     { SHTERM_INFO_WLAN_ASSOC, "SHTERM_INFO_WLAN_ASSOC" },
+     { SHTERM_INFO_FINGER_AUTH, "SHTERM_INFO_FINGER_AUTH" }};
 
 CREATE_ATTR_ROOT( SHTERM_INFO_SPEAKER );
 CREATE_ATTR_ROOT( SHTERM_INFO_VIB );
@@ -333,14 +338,23 @@ CREATE_ATTR_ROOT( SHTERM_INFO_USB );
 CREATE_ATTR_ROOT( SHTERM_INFO_WTAP );
 CREATE_ATTR_ROOT( SHTERM_INFO_GPS );
 CREATE_ATTR_ROOT( SHTERM_INFO_ACCELE );
-CREATE_ATTR_ROOT( SHTERM_FLIP_STATE );
-CREATE_ATTR_ROOT( SHTERM_FLIP_COUNT );
 CREATE_ATTR_ROOT( SHTERM_INFO_COMPS );
 CREATE_ATTR_ROOT( SHTERM_INFO_PROXIMITY );
 CREATE_ATTR_ROOT( SHTERM_INFO_PROXIMITY_CDC );
 CREATE_ATTR_ROOT( SHTERM_INFO_SUBCAMERA );
+CREATE_ATTR_ROOT( SHTERM_INFO_LMK_S1 );
+CREATE_ATTR_ROOT( SHTERM_INFO_LMK_TH1 );
+CREATE_ATTR_ROOT( SHTERM_INFO_LMK_TH2 );
+CREATE_ATTR_ROOT( SHTERM_INFO_LMK_TH3 );
 CREATE_ATTR_ROOT( SHTERM_INFO_GYRO );
 CREATE_ATTR_ROOT( SHTERM_INFO_PEDOMETER );
+CREATE_ATTR_ROOT( SHTERM_INFO_MUSIC_TNL );
+CREATE_ATTR_ROOT( SHTERM_INFO_ALARM );
+CREATE_ATTR_ROOT( SHTERM_INFO_GRIP );
+CREATE_ATTR_ROOT( SHTERM_INFO_WLAN_ASSOC );
+CREATE_ATTR_ROOT( SHTERM_INFO_FINGER_AUTH );
+CREATE_ATTR_ROOT( SHTERM_FLIP_STATE );
+CREATE_ATTR_ROOT( SHTERM_FLIP_COUNT );
 CREATE_ATTR_ROOT( ONEX );
 CREATE_ATTR_ROOT( EVDO );
 CREATE_ATTR_ROOT( GSM );
@@ -357,16 +371,9 @@ CREATE_ATTR_ROOT( MAX_WCDMA );
 CREATE_ATTR_ROOT( MIN_LTE );
 CREATE_ATTR_ROOT( MAX_LTE );
 CREATE_ATTR_READ( SHTERM_INIT );
-CREATE_ATTR_ROOT( SHTERM_INFO_LMK_S1 );
-CREATE_ATTR_ROOT( SHTERM_INFO_LMK_TH1 );
-CREATE_ATTR_ROOT( SHTERM_INFO_LMK_TH2 );
-CREATE_ATTR_ROOT( SHTERM_INFO_LMK_TH3 );
 CREATE_ATTR_ROOT( DRB );
 CREATE_ATTR_ROOT( CPUID );
 CREATE_ATTR_ROOT( MUSIC );
-CREATE_ATTR_ROOT( SHTERM_INFO_MUSIC_TNL );
-CREATE_ATTR_ROOT( SHTERM_INFO_ALARM );
-CREATE_ATTR_ROOT( SHTERM_INFO_GRIP );
 CREATE_ATTR_ROOT( DTB );
 CREATE_ATTR_ROOT( TMM );
 CREATE_ATTR_ROOT( SHTERM_STATE_SHTPS );
@@ -396,13 +403,22 @@ static struct attribute *shterm_default_attrs[] = {
     &shterm_info_SHTERM_INFO_GPS_attribute.attr,
     &shterm_info_SHTERM_INFO_ACCELE_attribute.attr,
     &shterm_info_SHTERM_INFO_COMPS_attribute.attr,
-    &shterm_info_SHTERM_FLIP_STATE_attribute.attr,
-    &shterm_info_SHTERM_FLIP_COUNT_attribute.attr,
     &shterm_info_SHTERM_INFO_PROXIMITY_attribute.attr,
     &shterm_info_SHTERM_INFO_PROXIMITY_CDC_attribute.attr,
     &shterm_info_SHTERM_INFO_SUBCAMERA_attribute.attr,
+    &shterm_info_SHTERM_INFO_LMK_S1_attribute.attr,
+    &shterm_info_SHTERM_INFO_LMK_TH1_attribute.attr,
+    &shterm_info_SHTERM_INFO_LMK_TH2_attribute.attr,
+    &shterm_info_SHTERM_INFO_LMK_TH3_attribute.attr,
     &shterm_info_SHTERM_INFO_GYRO_attribute.attr,
     &shterm_info_SHTERM_INFO_PEDOMETER_attribute.attr,
+    &shterm_info_SHTERM_INFO_MUSIC_TNL_attribute.attr,
+    &shterm_info_SHTERM_INFO_ALARM_attribute.attr,
+    &shterm_info_SHTERM_INFO_GRIP_attribute.attr,
+    &shterm_info_SHTERM_INFO_WLAN_ASSOC_attribute.attr,
+    &shterm_info_SHTERM_INFO_FINGER_AUTH_attribute.attr,
+    &shterm_info_SHTERM_FLIP_STATE_attribute.attr,
+    &shterm_info_SHTERM_FLIP_COUNT_attribute.attr,
     &shterm_info_ONEX_attribute.attr,
     &shterm_info_EVDO_attribute.attr,
     &shterm_info_GSM_attribute.attr,
@@ -419,16 +435,9 @@ static struct attribute *shterm_default_attrs[] = {
     &shterm_info_MIN_LTE_attribute.attr,
     &shterm_info_MAX_LTE_attribute.attr,
     &shterm_info_SHTERM_INIT_attribute.attr,
-    &shterm_info_SHTERM_INFO_LMK_S1_attribute.attr,
-    &shterm_info_SHTERM_INFO_LMK_TH1_attribute.attr,
-    &shterm_info_SHTERM_INFO_LMK_TH2_attribute.attr,
-    &shterm_info_SHTERM_INFO_LMK_TH3_attribute.attr,
     &shterm_info_DRB_attribute.attr,
     &shterm_info_CPUID_attribute.attr,
     &shterm_info_MUSIC_attribute.attr,
-    &shterm_info_SHTERM_INFO_MUSIC_TNL_attribute.attr,
-    &shterm_info_SHTERM_INFO_ALARM_attribute.attr,
-    &shterm_info_SHTERM_INFO_GRIP_attribute.attr,
     &shterm_info_DTB_attribute.attr,
     &shterm_info_TMM_attribute.attr,
     &shterm_info_SHTERM_STATE_SHTPS_attribute.attr,
@@ -458,17 +467,25 @@ static shterm_data data = {
 
 int shterm_get_music_info( void )
 {
+    if(!is_shterm_kobject_initialized){
+        printk( "shterm_kobject is not initialized, %s\n", __func__ );
+        return -EAGAIN;
+    }
+
     if( shterm_info[SHTERM_INFO_MUSIC] || shterm_info[SHTERM_INFO_LINE] || shterm_info[SHTERM_INFO_MUSIC_TNL] ){
         return 1;
     }
     return 0;
 }
+EXPORT_SYMBOL(shterm_get_music_info);
 
 int shterm_k_set_info( unsigned long int shterm_info_id, unsigned long int shterm_info_value )
 {
-    if( shterm_info_id == SHTERM_INFO_FINGER_AUTH ){
-        shterm_info_id = SHTERM_INFO_LMK_TH3;
+    if(!is_shterm_kobject_initialized){
+        printk( "shterm_kobject is not initialized, %s\n", __func__ );
+        return -EAGAIN;
     }
+
     if( shterm_info_id < 0 || shterm_info_id >= SHTERM_MAX ){
         return SHTERM_FAILURE;
     }
@@ -480,6 +497,7 @@ int shterm_k_set_info( unsigned long int shterm_info_id, unsigned long int shter
 
     return SHTERM_SUCCESS;
 }
+EXPORT_SYMBOL(shterm_k_set_info);
 
 int shterm_k_set_event( shbattlog_info_t *info )
 {
@@ -506,12 +524,17 @@ int shterm_k_set_event( shbattlog_info_t *info )
     int idx = 0;
     int ret;
 
+    if(!is_shterm_kobject_initialized){
+        printk( "shterm_kobject is not initialized, %s\n", __func__ );
+        return -EAGAIN;
+    }
+
     if( info->event_num >= SHBATTLOG_EVENT_QUEUE_FULL ){
         return SHTERM_FAILURE;
     }
 
     switch( info->event_num ){
-    case SHTERM_TPS_STATE_CRC_ERROR:
+    case SHBATTLOG_EVENT_TPS_CRC_ERROR:
         shterm_shtps_state = SHTERM_TPS_STATE_CRC_ERROR;
         break;
 
@@ -616,10 +639,16 @@ int shterm_k_set_event( shbattlog_info_t *info )
 
     return ret;
 }
+EXPORT_SYMBOL(shterm_k_set_event);
 
 int shterm_flip_status_set( int state )
 {
     int ret = SHTERM_FAILURE;
+
+    if(!is_shterm_kobject_initialized){
+        printk( "shterm_kobject is not initialized, %s\n", __func__ );
+        return -EAGAIN;
+    }
 
     if( down_interruptible(&shterm_flip_sem) ){
         printk( "%s down_interruptible for read failed\n", __FUNCTION__ );
@@ -643,6 +672,7 @@ int shterm_flip_status_set( int state )
 
     return ret;
 }
+EXPORT_SYMBOL(shterm_flip_status_set);
 
 static void shterm_release( struct kobject *kobj )
 {
@@ -652,6 +682,11 @@ static void shterm_release( struct kobject *kobj )
 static ssize_t shterm_info_show( struct kobject *kobj, struct attribute *attr, char *buff )
 {
     int n, ret;
+
+    if(!is_shterm_kobject_initialized){
+        printk( "shterm_kobject is not initialized, %s\n", __func__ );
+        return -EAGAIN;
+    }
 
     if( !strncmp(attr->name, "MIN_ONEX", strlen("MIN_ONEX")) ){
         ret = sprintf( buff, "%d", onex_min );
@@ -770,6 +805,11 @@ static ssize_t shterm_info_store( struct kobject *kobj, struct attribute *attr, 
 {
     int n;
     int val;
+
+    if(!is_shterm_kobject_initialized){
+        printk( "shterm_kobject is not initialized, %s\n", __func__ );
+        return -EAGAIN;
+    }
 
     if( !strncmp(attr->name, "ONEX", strlen("ONEX")) ){
         val = (int)simple_strtol( buff, (char **)NULL, 10 );
@@ -919,6 +959,8 @@ static int __init shterm_kobject_init( void )
     sema_init( &shterm_flip_sem, 1 );
     memset( shterm_info, 0x00, sizeof(shterm_info) );
     memset( shterm_info_read, 0x00, sizeof(shterm_info_read) );
+
+    is_shterm_kobject_initialized = 1;
 
     return ret;
 }

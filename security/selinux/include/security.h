@@ -67,11 +67,7 @@
 
 struct netlbl_lsm_secattr;
 
-#if defined(CONFIG_SECURITY_MIYABI)
-extern const int selinux_enabled;
-#else
 extern int selinux_enabled;
-#endif
 
 /* Policy capabilities */
 enum {

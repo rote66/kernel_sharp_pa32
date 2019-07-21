@@ -316,7 +316,11 @@ static long shub_ioctl(struct file *filp, unsigned int cmd, unsigned long arg, i
                 DBG_MCU_IO("ioctl(cmd = Set_Param) : %s\n", logbuff); 				// SHMDS_HUB_0701_01 add
 #endif
                 mutex_lock(&shub_lock);
-                shub_set_exif_md_mode_flg(param.m_iParam[31]);                      /* SHMDS_HUB_0211_01 add */
+/* SHMDS_HUB_0206_09 mod S */
+                if(param.m_iType == 7) {    // APP_MOTDTECTION
+                    shub_set_exif_md_mode_flg(param.m_iParam[31]);                  /* SHMDS_HUB_0211_01 add */
+                }
+/* SHMDS_HUB_0206_09 mod E */
                 ret = shub_set_param(param.m_iType, param.m_iParam);
                 mutex_unlock(&shub_lock);
                 if(ret) {
